@@ -5,41 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>fintxn</title>
 
-  <!-- Telegram WebApp JS -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Tailwind CSS CDN (Content Delivery Network — сеть доставки контента) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          borderRadius: { xl2: "18px" },
-          boxShadow: {
-            soft: "0 10px 30px rgba(0,0,0,.35)",
-            inset: "inset 0 1px 0 rgba(255,255,255,.06)",
-          },
           colors: {
-            tg: {
-              bg: 'var(--tg-theme-bg-color, #0f1720)',
-              text: 'var(--tg-theme-text-color, #e5e7eb)',
-              hint: 'var(--tg-theme-hint-color, rgba(229,231,235,.55))',
-              button: 'var(--tg-theme-button-color, #3390ec)',
-              buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
-              secondaryBg: 'var(--tg-theme-secondary-bg-color, rgba(255,255,255,.06))',
-            },
             brand: {
               bg: "#0b121a",
-              card: "rgba(255,255,255,.06)",
-              card2: "rgba(255,255,255,.08)",
+              glass: "rgba(255,255,255,.06)",
               line: "rgba(255,255,255,.10)",
               muted: "rgba(255,255,255,.45)",
               green: "#6f8f22",
               red: "#8f3b4a",
               blue: "#0a7d9b",
-              cyan: "#0ea5b7",
             }
+          },
+          borderRadius: { xl2: "18px" },
+          boxShadow: {
+            inset: "inset 0 1px 0 rgba(255,255,255,.06)",
+            soft: "0 14px 30px rgba(0,0,0,.35)",
           }
         }
       }
@@ -49,133 +36,129 @@
   <link rel="stylesheet" href="./app.css" />
 </head>
 
-<body class="min-h-screen bg-brand-bg text-tg-text">
+<body class="min-h-screen bg-brand-bg text-white">
   <div class="min-h-screen w-full flex justify-center">
-    <div class="w-full max-w-md px-4 pb-24 pt-3">
-      <!-- Top bar -->
-      <header class="pt-1">
-        <div class="flex items-center justify-between">
-          <button id="btnClose" class="text-brand-cyan text-lg font-medium opacity-90">Закрыть</button>
-          <div class="text-center">
-            <div class="text-xl font-semibold tracking-wide">fintxn</div>
-            <div class="text-xs uppercase tracking-widest text-brand-muted mt-0.5">мини-приложение</div>
+    <div class="w-full max-w-md px-4 pb-24 pt-6 space-y-5">
+
+      <!-- Date + Type -->
+      <section class="grid grid-cols-2 gap-3">
+        <div>
+          <div class="label">Дата</div>
+          <div class="glass-input">
+            <input id="date" type="date" class="w-full bg-transparent outline-none" />
           </div>
-          <button id="btnMenu" class="w-10 h-10 flex items-center justify-center rounded-full bg-brand-card border border-brand-line">
-            <span class="text-xl leading-none">⋯</span>
-          </button>
         </div>
-      </header>
 
-      <!-- Form -->
-      <main class="mt-6 space-y-5">
+        <div>
+          <div class="label">Тип</div>
+          <div class="glass-seg">
+            <button class="seg-btn" data-type="in">Получил</button>
+            <button class="seg-btn" data-type="out">Отдал</button>
+            <button class="seg-btn" data-type="fx">Обменял</button>
+          </div>
+        </div>
+      </section>
 
-        <!-- Date + Type -->
-        <section class="grid grid-cols-2 gap-3">
-          <div>
-            <div class="label">Дата</div>
-            <div class="glass-input">
-              <input id="date" type="text" inputmode="numeric" class="w-full bg-transparent outline-none"
-                     placeholder="ДД.ММ.ГГГГ" />
-            </div>
+      <!-- Amount + Currency -->
+      <section>
+        <div class="label" id="amountLabel">Сумма</div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="glass-input col-span-2">
+            <input id="amount" type="text" inputmode="decimal"
+              class="w-full bg-transparent outline-none money-input"
+              placeholder="+ 0,00" />
           </div>
 
-          <div>
-            <div class="label">Тип</div>
-            <div class="seg glass-seg">
-              <button class="seg-btn" data-type="in">Получил</button>
-              <button class="seg-btn" data-type="out">Отдал</button>
-              <button class="seg-btn" data-type="fx">Обменял</button>
-            </div>
+          <div class="glass-input p-0 overflow-hidden">
+            <select id="curMain" class="w-full h-[52px] bg-transparent outline-none px-3 font-semibold">
+              <option value="UZS">UZS</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="RUB">RUB</option>
+              <option value="KZT">KZT</option>
+            </select>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- Amount -->
-        <section>
-          <div class="label" id="amountLabel">Сумма</div>
+      <!-- FX block (Exchange relative to UZS) -->
+      <section id="fxBlock" class="fx-block hidden">
+        <div class="fx-wrap">
+          <div class="label mb-2" id="fxHint">Курс UZS на 1 ед. валюты</div>
+
           <div class="grid grid-cols-3 gap-3">
             <div class="glass-input col-span-2">
-              <input id="amount" type="text" inputmode="decimal" class="w-full bg-transparent outline-none"
-                     placeholder="0 000,00" />
-            </div>
-            <button id="curMain" class="glass-pill">UZS</button>
-          </div>
-          <div class="hint mt-2" id="amountHint">Формат: 1 234 567,89</div>
-        </section>
-
-        <!-- FX block -->
-        <section id="fxBlock" class="fx-block hidden">
-          <div class="fx-wrap">
-            <div class="hint mb-2">Курс UZS на 1 ед. валюты</div>
-
-            <div class="grid grid-cols-3 gap-3">
-              <div class="glass-input col-span-2">
-                <input id="fxRate" type="text" inputmode="decimal" class="w-full bg-transparent outline-none"
-                       placeholder="12 200" />
-              </div>
-              <button id="curFx" class="glass-pill">USD</button>
+              <input id="fxRate" type="text" inputmode="decimal"
+                class="w-full bg-transparent outline-none"
+                placeholder="0,00" />
             </div>
 
-            <div class="mt-2 text-sm" id="fxTotalLine">
-              <span class="text-brand-green font-medium">Итого: + 0,00 USD</span>
+            <div class="glass-input p-0 overflow-hidden">
+              <select id="curFx" class="w-full h-[52px] bg-transparent outline-none px-3 font-semibold">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="RUB">RUB</option>
+                <option value="KZT">KZT</option>
+              </select>
             </div>
           </div>
-        </section>
 
-        <!-- Counterparty -->
-        <section id="counterpartyBlock">
-          <div class="label">Контрагент</div>
-          <div class="glass-input">
-            <input id="counterparty" type="text" class="w-full bg-transparent outline-none" placeholder="Имя, магазин..." />
+          <div class="mt-2 text-sm" id="fxTotalLine">
+            <span class="fx-total">Итого: + 0,00</span>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- Comment -->
-        <section>
-          <div class="label">Комментарий</div>
-          <div class="glass-input">
-            <input id="comment" type="text" class="w-full bg-transparent outline-none" placeholder="Детали операции..." />
+      <!-- Counterparty (hidden for fx) -->
+      <section id="counterpartyBlock">
+        <div class="label">Контрагент</div>
+        <div class="glass-input">
+          <input id="counterparty" type="text" class="w-full bg-transparent outline-none" placeholder="Имя, магазин..." />
+        </div>
+      </section>
+
+      <!-- Comment -->
+      <section>
+        <div class="label">Комментарий</div>
+        <div class="glass-input">
+          <input id="comment" type="text" class="w-full bg-transparent outline-none" placeholder="Детали операции..." />
+        </div>
+      </section>
+
+      <!-- Photo -->
+      <section>
+        <label class="photo-drop" for="photo">
+          <div class="flex items-center gap-3">
+            <div class="icon-cam">📷</div>
+            <div class="text-brand-muted">Добавить фото</div>
           </div>
-        </section>
+          <input id="photo" type="file" accept="image/*" class="hidden" />
+        </label>
+        <div id="photoMeta" class="hint mt-2 hidden"></div>
+      </section>
 
-        <!-- Photo -->
-        <section>
-          <label class="photo-drop" for="photo">
-            <div class="flex items-center gap-3">
-              <div class="icon-cam">📷</div>
-              <div class="text-brand-muted">Добавить фото</div>
-            </div>
-            <input id="photo" type="file" accept="image/*" class="hidden" />
-          </label>
-          <div id="photoMeta" class="hint mt-2 hidden"></div>
-        </section>
+      <!-- Save -->
+      <section>
+        <button id="btnSave" class="btn-save btn-save--blue">Сохранить</button>
+      </section>
 
-        <!-- Save -->
-        <section>
-          <button id="btnSave" class="btn-save btn-save--blue">
-            <span class="mr-2">💾</span> Сохранить
-          </button>
-        </section>
+      <!-- Last records -->
+      <section class="mt-6">
+        <div class="flex items-center justify-between">
+          <div class="text-lg font-semibold">Последние записи</div>
+          <div class="pill-counter" id="pager">0 / 0</div>
+        </div>
 
-        <!-- Last records -->
-        <section class="mt-6">
-          <div class="flex items-center justify-between">
-            <div class="text-lg font-semibold">Последние записи</div>
-            <div class="pill-counter" id="pager">3 / 3</div>
-          </div>
+        <div id="list" class="mt-4 space-y-3"></div>
+      </section>
 
-          <div id="list" class="mt-4 space-y-3"></div>
-        </section>
-
-      </main>
     </div>
   </div>
 
   <!-- Toast -->
   <div id="toast" class="toast hidden">
-    <div class="toast-inner">
-      <span class="mr-2">📶</span>
-      <span>Нет связи</span>
-    </div>
+    <div class="toast-inner"><span id="toastText">Нет связи</span></div>
   </div>
 
   <script src="./app.js"></script>
