@@ -4,12 +4,13 @@
  ***********************/
 
 // UPDATED URL
-const API_URL = "https://script.google.com/macros/s/AKfycbw-8qQI4w3gsvqEIHH_SiCNN-A--O9PM_-xvDUXN2lCSJbwLUvzsVuw75DEXBvNZz4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
 
 // STATE
 const state = {
     userId: null,
     user: null,
+    initData: null, // Raw Telegram initData
     access: null,   // null = checking, true = allowed, false = denied
 
     // Form
@@ -66,8 +67,8 @@ const els = {
  ****************/
 async function apiPost(payload) {
     // SECURITY: Always attach initData if available
-    if (window.Telegram?.WebApp?.initData) {
-        payload.initData = window.Telegram.WebApp.initData;
+    if (state.initData) {
+        payload.initData = state.initData;
     }
     // Legacy support or local testing fallback
     if (state.userId && !payload.user_id) payload.user_id = state.userId;
@@ -81,7 +82,8 @@ async function apiPost(payload) {
         return JSON.parse(text);
     } catch (e) {
         console.error("API Error:", e);
-        return { ok: false, error: "network_error" };
+        // Return actual error detail for debugging
+        return { ok: false, error: "network_error", details: e.toString() };
     }
 }
 
@@ -158,6 +160,9 @@ function initApp() {
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
+        // Capture raw initData for Auth
+        state.initData = tg.initData;
+
         if (tg.initDataUnsafe?.user?.id) {
             state.userId = String(tg.initDataUnsafe.user.id);
         }
@@ -498,4 +503,3 @@ function formatCurrency(val, cur) {
 
 // Init
 initApp();
-
