@@ -4,7 +4,7 @@
  ***********************/
 
 // UPDATED URL
-const API_URL = "https://script.google.com/macros/s/AKfycbwvAuh2iGkIPSconX0KJd-LXAlLD1Q5XkpNx8ulGWzLm2ztj-wTKqD247Sa1csGkBnf/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
 
 // STATE
 const state = {
@@ -60,6 +60,9 @@ const els = {
     historyCount: document.getElementById("historyCount"),
     historyList: document.getElementById("historyList"),
     statusPill: document.getElementById("statusPill"),
+    amountError: document.getElementById("amountError"),
+    counterpartyError: document.getElementById("counterpartyError"),
+    commentError: document.getElementById("commentError"),
 };
 
 /****************
@@ -340,18 +343,36 @@ els.photoRemoveBtn.addEventListener('click', () => {
 els.saveBtn.addEventListener('click', async () => {
     if (!state.userId) return;
 
+    // Reset Errors
+    els.amountError.classList.add('hidden');
+    els.counterpartyError.classList.add('hidden');
+    els.commentError.classList.add('hidden');
+
     // Check Access
     if (state.access === false) {
-        alert("Нет доступа к сохранению");
+        showStatus("Нет доступа к сохранению", true);
         return;
     }
     if (state.access === null) {
-        alert("Подождите загрузки доступа...");
+        showStatus("Подождите загрузки доступа...", true);
         return;
     }
 
-    if (!state.amount || parseNumber(state.amount) === 0) { alert("Введите сумму"); return; }
-    if (!els.counterpartyInput.value.trim()) { alert("Введите контрагента"); return; }
+    let hasError = false;
+    if (!state.amount || parseNumber(state.amount) === 0) {
+        els.amountError.classList.remove('hidden');
+        hasError = true;
+    }
+    if (!els.counterpartyInput.value.trim()) {
+        els.counterpartyError.classList.remove('hidden');
+        hasError = true;
+    }
+    if (!els.commentInput.value.trim()) {
+        els.commentError.classList.remove('hidden');
+        hasError = true;
+    }
+
+    if (hasError) return;
 
     // 1. Prepare Payload
     const [y, m, d] = state.date.split('-');
@@ -380,23 +401,20 @@ els.saveBtn.addEventListener('click', async () => {
         } catch (e) { console.error(e); }
     }
 
-    // 2. OPTIMISTIC UI: Render Transaction Immediately
+    // 2. OPTIMISTIC UI
     const tempId = "temp_" + Date.now();
     const tempItem = {
         date: dateFormatted,
-        type: state.type, // "in"/"out"/"fx" - logic needs translation?
-        // Translate type for UI to match what server returns?
-        // Server saves "in". Client "renderHistory" expects "in" or "Получил".
-        // My render logic handles "in".
+        type: state.type,
         amount_main: formatCurrency(parseNumber(state.amount), els.currencyInput.value),
-        amount_sub: "", // Simplified for temp
+        amount_sub: "",
         desc: payload.counterparty,
-        temp: true // Flag
+        comment: payload.comment,
+        temp: true
     };
 
-    // Prepend to history local
     state.history.unshift(tempItem);
-    renderHistory(); // Re-render with temp item
+    renderHistory();
 
     // UI Cleanup
     state.amount = "";
@@ -408,7 +426,6 @@ els.saveBtn.addEventListener('click', async () => {
     state.photo = null;
     els.photoRemoveBtn.click();
 
-    // Show success visual briefly on button?
     els.saveBtnText.textContent = "Сохраняется...";
     els.saveBtn.disabled = true;
 
@@ -419,16 +436,11 @@ els.saveBtn.addEventListener('click', async () => {
     if (res.ok) {
         els.saveBtnText.textContent = "Сохранено!";
         if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-
-        // Reload actual history to confirm and get real data
         await loadHistory();
     } else {
         els.saveBtnText.textContent = "Ошибка";
         if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-
-        // Remove temp item? Or mark error?
-        // Simplest: Reload history (which will remove temp item since it wasn't saved)
-        alert("Ошибка при сохранении: " + (res.error || "unknown"));
+        showStatus("Ошибка: " + (res.error || "unknown"), true);
         state.history = state.history.filter(x => x !== tempItem);
         renderHistory();
     }
@@ -446,12 +458,10 @@ function renderHistory() {
 
     state.history.forEach(item => {
         const div = document.createElement('div');
-        div.className = "bg-tg-secondaryBg p-3 rounded-2xl flex gap-3 items-center transition-all duration-300";
+        div.className = "bg-tg-secondaryBg p-3 rounded-2xl flex gap-3 items-center transition-all duration-300 relative overflow-hidden";
 
-        // Optimistic State Style
         if (item.temp) {
             div.classList.add("opacity-50", "animate-pulse");
-            div.innerHTML += `<div class="absolute inset-0 flex items-center justify-center text-[12px] font-bold text-blue-500">Сохраняется...</div>`;
         }
 
         let iconColor = 'text-gray-500';
@@ -460,14 +470,17 @@ function renderHistory() {
 
         const typeRaw = (item.type || "").toLowerCase();
 
+        // 3. CORRECTED ARROWS: 
+        // IN (Получил) -> DOWN arrow
+        // OUT (Отдал) -> UP arrow
         if (typeRaw.includes('in') || typeRaw.includes('получил')) {
             iconColor = 'text-green-500';
             iconBg = 'bg-green-500/10';
-            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
         } else if (typeRaw.includes('out') || typeRaw.includes('отдал')) {
             iconColor = 'text-red-500';
             iconBg = 'bg-red-500/10';
-            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
+            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
         } else { // FX
             iconColor = 'text-blue-500';
             iconBg = 'bg-blue-500/10';
@@ -476,7 +489,10 @@ function renderHistory() {
 
         const dateStr = item.date;
         const amountStr = item.amount_main;
-        const subStr = item.amount_sub || item.counterparty || (item.temp ? item.desc : "") || "";
+
+        // 2. Row 1: Counterparty | Row 2: Comment
+        const row1 = item.desc || "";
+        const row2 = item.comment || "";
 
         div.innerHTML = `
             <div class="w-10 h-10 rounded-full ${iconBg} ${iconColor} flex items-center justify-center shrink-0">
@@ -484,12 +500,12 @@ function renderHistory() {
             </div>
             <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-center">
-                    <span class="text-tg-text font-medium truncate pr-2">${item.desc || (item.temp ? "..." : (item.type || "Запись"))}</span>
+                    <span class="text-tg-text font-medium truncate pr-2">${row1 || "..."}</span>
                     <span class="text-tg-text font-semibold shrink-0 ${iconColor}">${amountStr}</span>
                 </div>
-                <div class="flex justify-between items-center mt-1">
-                    <span class="text-[13px] text-tg-hint truncate w-2/3">${subStr}</span>
-                    <span class="text-[12px] text-tg-hint shrink-0">${item.temp ? "Сохранение..." : dateStr}</span>
+                <div class="flex justify-between items-center mt-0.5">
+                    <span class="text-[13px] text-tg-hint truncate w-[70%]">${row2}</span>
+                    <span class="text-[11px] text-tg-hint shrink-0">${item.temp ? "..." : dateStr}</span>
                 </div>
             </div>
         `;
@@ -503,4 +519,3 @@ function formatCurrency(val, cur) {
 
 // Init
 initApp();
-

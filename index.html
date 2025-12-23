@@ -96,8 +96,8 @@
                 </div>
 
                 <!-- Amount + Currency -->
-                <div>
-                    <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма</label>
+                <div class="relative">
+                    <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма *</label>
                     <div class="flex gap-2">
                         <div class="relative w-3/4">
                             <span id="amountSign" class="absolute left-3 top-1/2 -translate-y-1/2 text-[16px]">+</span>
@@ -116,6 +116,8 @@
                             </select>
                         </div>
                     </div>
+                    <div id="amountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
+                        заполнить</div>
                 </div>
 
                 <!-- FX Block -->
@@ -144,18 +146,22 @@
                 </div>
 
                 <!-- Counterparty -->
-                <div>
+                <div class="relative">
                     <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент *</label>
                     <input id="counterpartyInput" required placeholder="Магазин, такси..."
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
                         type="text" />
+                    <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                        Необходимо заполнить</div>
                 </div>
 
                 <!-- Comment -->
-                <div>
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
+                <div class="relative">
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий *</label>
                     <textarea id="commentInput" placeholder="Детали операции..." rows="2"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
+                    <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
+                        заполнить</div>
                 </div>
 
                 <!-- Photo -->
