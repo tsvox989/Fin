@@ -4,7 +4,7 @@
  ***********************/
 
 // UPDATED URL
-const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw-8qQI4w3gsvqEIHH_SiCNN-A--O9PM_-xvDUXN2lCSJbwLUvzsVuw75DEXBvNZz4/exec";
 
 // STATE
 const state = {
@@ -498,3 +498,4 @@ function formatCurrency(val, cur) {
 
 // Init
 initApp();
+
