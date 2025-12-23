@@ -1,576 +1,483 @@
 /***********************
- * Money Tracker — app.js
- * Frontend for Telegram Mini App
- *
- * Background tasks:
- * - gets Telegram user_id immediately (if inside Telegram)
- * - starts history loading and access check in background (does not block input)
+ * Money Tracker — App.js
+ * Integration: Google Apps Script Web App
  ***********************/
 
-const API_URL = "PASTE_YOUR_GAS_WEBAPP_URL_HERE"; // например: https://script.google.com/macros/s/XXXXX/exec
-const HISTORY_LIMIT = 50;
+// UPDATED URL
+const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
 
-const els = {
-  dateBtn: document.getElementById("dateBtn"),
-  dateText: document.getElementById("dateText"),
-  dateInput: document.getElementById("dateInput"),
-
-  typeInBtn: document.getElementById("typeInBtn"),
-  typeOutBtn: document.getElementById("typeOutBtn"),
-  typeFxBtn: document.getElementById("typeFxBtn"),
-  typeThumb: document.getElementById("typeThumb"),
-
-  amountInput: document.getElementById("amountInput"),
-  currencyInput: document.getElementById("currencyInput"),
-
-  fxBlock: document.getElementById("fxBlock"),
-  fxHint: document.getElementById("fxHint"),
-  fxRateInput: document.getElementById("fxRateInput"),
-  fxAmountInput: document.getElementById("fxAmountInput"),
-  fxCurBadge: document.getElementById("fxCurBadge"),
-
-  counterpartyInput: document.getElementById("counterpartyInput"),
-  commentInput: document.getElementById("commentInput"),
-
-  photoInput: document.getElementById("photoInput"),
-  photoName: document.getElementById("photoName"),
-  removePhotoBtn: document.getElementById("removePhotoBtn"),
-
-  saveBtn: document.getElementById("saveBtn"),
-  statusPill: document.getElementById("statusPill"),
-
-  historyList: document.getElementById("historyList"),
-  historyCount: document.getElementById("historyCount"),
-};
-
+// STATE
 const state = {
-  tg: null,
-  userId: "",
-  type: "in", // in|out|fx
-  amountRaw: "",
-  isSaving: false,
-  history: null, // null => not connected
+    userId: null,
+    user: null,
+    access: null,   // null = checking, true = allowed, false = denied
+
+    // Form
+    type: "in",
+    date: new Date().toISOString().slice(0, 10),
+    amount: "",
+    currency: "UZS",
+    fxRate: "",
+    fxCurrency: "USD",
+    comment: "",
+    photo: null,
+
+    history: [],
+    loading: false
 };
 
-/***************
- * TELEGRAM
- ***************/
-function initTelegram_() {
-  if (window.Telegram && Telegram.WebApp) {
-    state.tg = Telegram.WebApp;
-    try { state.tg.ready(); } catch {}
+// DOM Elements
+const els = {
+    formSection: document.querySelector('section:first-of-type'),
+    historySection: document.querySelector('section:last-of-type'),
+    dateDisplay: document.getElementById("dateDisplay"),
+    dateInput: document.getElementById("dateInput"),
+    typeGlider: document.getElementById("typeGlider"),
+    typeInputs: document.querySelectorAll('input[name="txnType"]'),
+    typeLabels: {
+        in: document.querySelector('label[for="typeIn"]'),
+        out: document.querySelector('label[for="typeOut"]'),
+        fx: document.querySelector('label[for="typeFx"]'),
+    },
+    amountSign: document.getElementById("amountSign"),
+    amountInput: document.getElementById("amountInput"),
+    currencyInput: document.getElementById("currencyInput"),
+    amountLabel: document.getElementById("amountLabel"), // Added label ref
+    fxBlock: document.getElementById("fxBlock"),
+    fxRateInput: document.getElementById("fxRateInput"),
+    fxCurrencyInput: document.getElementById("fxCurrencyInput"),
+    fxTotalDisplay: document.getElementById("fxTotalDisplay"),
+    counterpartyInput: document.getElementById("counterpartyInput"),
+    commentInput: document.getElementById("commentInput"),
+    photoLabel: document.getElementById("photoLabel"),
+    photoInput: document.getElementById("photoInput"),
+    photoPreviewWrap: document.getElementById("photoPreviewWrap"),
+    photoPreviewImg: document.getElementById("photoPreviewImg"),
+    photoRemoveBtn: document.getElementById("photoRemoveBtn"),
+    saveBtn: document.getElementById("saveBtn"),
+    saveBtnText: document.getElementById("saveBtnText"),
+    historyCount: document.getElementById("historyCount"),
+    historyList: document.getElementById("historyList"),
+    statusPill: document.getElementById("statusPill"),
+};
 
-    const u = state.tg.initDataUnsafe && state.tg.initDataUnsafe.user ? state.tg.initDataUnsafe.user : null;
-    if (u && u.id) state.userId = String(u.id);
-  }
+/****************
+ * API HELPERS
+ ****************/
+async function apiPost(payload) {
+    // SECURITY: Always attach initData if available
+    if (window.Telegram?.WebApp?.initData) {
+        payload.initData = window.Telegram.WebApp.initData;
+    }
+    // Legacy support or local testing fallback
+    if (state.userId && !payload.user_id) payload.user_id = state.userId;
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+        });
+        const text = await res.text();
+        return JSON.parse(text);
+    } catch (e) {
+        console.error("API Error:", e);
+        return { ok: false, error: "network_error" };
+    }
 }
 
-function isDark_() {
-  try {
-    if (state.tg && state.tg.colorScheme) return state.tg.colorScheme === "dark";
-  } catch {}
-  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
 
-/***************
- * DATE
- ***************/
-function pad2_(n){ return String(n).padStart(2,"0"); }
+/****************
+ * UTILS
+ ****************/
+const formatNumberString = (raw) => {
+    let clean = raw.replace(/[^\d,]/g, '');
+    const parts = clean.split(',');
+    if (parts.length > 2) clean = parts[0] + ',' + parts.slice(1).join('');
+    const [int, dec] = clean.split(',');
+    const intFormatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    if (dec !== undefined) return `${intFormatted},${dec.slice(0, 2)}`;
+    if (raw.endsWith(',')) return `${intFormatted},`;
+    return intFormatted;
+};
 
-function isoToDMY_(iso){
-  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "--.--.----";
-  const [y,m,d] = iso.split("-");
-  return `${d}.${m}.${y}`;
-}
-
-function setToday_(){
-  const now = new Date();
-  const iso = `${now.getFullYear()}-${pad2_(now.getMonth()+1)}-${pad2_(now.getDate())}`;
-  els.dateInput.value = iso;
-  els.dateText.textContent = isoToDMY_(iso);
-}
-
-function bindDate_(){
-  els.dateBtn.addEventListener("click", () => els.dateInput.showPicker ? els.dateInput.showPicker() : els.dateInput.click());
-  els.dateInput.addEventListener("change", () => {
-    els.dateText.textContent = isoToDMY_(els.dateInput.value);
-  });
-}
-
-/***************
- * AMOUNT formatting (display with spaces; store raw without spaces)
- ***************/
-function normalizeAmountRaw_(s){
-  s = String(s||"").replace(/\s+/g,"").replace(/[^\d,]/g,"");
-  const i = s.indexOf(",");
-  if (i !== -1) {
-    const ip = s.slice(0,i);
-    const fp = s.slice(i+1).replace(/,/g,"").slice(0,2);
-    return fp.length ? `${ip},${fp}` : `${ip},`;
-  }
-  return s;
-}
-
-function formatForDisplay_(raw){
-  raw = String(raw||"");
-  const parts = raw.split(",");
-  const intp = parts[0] || "";
-  const frac = parts.length > 1 ? parts[1] : null;
-  const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  if (frac === null) return grouped;
-  return `${grouped},${frac}`;
-}
-
-function toNumber_(raw){
-  const n = Number(String(raw||"").replace(",", "."));
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function fixed2Comma_(num){
-  const n = Number(num);
-  if (!Number.isFinite(n)) return "";
-  return n.toFixed(2).replace(".", ",");
-}
-
-function setInputWithCaret_(input, newValue, caretFromRight){
-  input.value = newValue;
-  const pos = Math.max(0, newValue.length - caretFromRight);
-  input.setSelectionRange(pos, pos);
-}
-
-function bindAmount_(){
-  els.amountInput.addEventListener("input", (e) => {
+const handleInputWithFormat = (e, callback) => {
     const input = e.target;
-    const before = input.value;
-    const caret = input.selectionStart || 0;
-    const caretFromRight = before.length - caret;
+    const cursor = input.selectionStart;
+    const oldVal = input.value;
+    const digitsBefore = oldVal.slice(0, cursor).replace(/[^\d,]/g, '').length;
+    const newVal = formatNumberString(oldVal);
+    input.value = newVal;
+    if (callback) callback(newVal);
+    let newCursor = 0;
+    let digitsSeen = 0;
+    for (let i = 0; i < newVal.length; i++) {
+        if (digitsSeen >= digitsBefore) break;
+        const char = newVal[i];
+        if (/[0-9,]/.test(char)) digitsSeen++;
+        newCursor++;
+    }
+    input.setSelectionRange(newCursor, newCursor);
+};
 
-    const raw = normalizeAmountRaw_(before);
-    state.amountRaw = raw;
+const parseNumber = (val) => {
+    if (!val) return 0;
+    return parseFloat(val.replace(/\s/g, '').replace(',', '.'));
+};
 
-    const display = formatForDisplay_(raw);
-    setInputWithCaret_(input, display, caretFromRight);
+const showStatus = (msg, isError = false) => {
+    if (!els.statusPill) return;
+    els.statusPill.innerHTML = `<span>${msg}</span>`;
+    els.statusPill.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${isError ? 'text-red-500 bg-red-500/10' : 'text-green-500 bg-green-500/10'}`;
+};
 
-    paintAmountByType_();
-    if (state.type === "fx") updateFxComputed_();
-  });
+/****************
+ * INIT logic
+ ****************/
+function initApp() {
+    // 1. Setup default UI immediately (Non-blocking)
+    els.dateInput.value = new Date().toISOString().slice(0, 10);
+    updateDateDisplay();
+    updateTheme(); // Ensures correct colors
 
-  els.amountInput.addEventListener("blur", () => {
-    const raw = normalizeAmountRaw_(state.amountRaw || "");
-    state.amountRaw = raw.endsWith(",") ? raw.slice(0,-1) : raw;
-    els.amountInput.value = formatForDisplay_(state.amountRaw);
-    paintAmountByType_();
-    if (state.type === "fx") updateFxComputed_();
-  });
+    // 2. Resolve User ID
+    if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        if (tg.initDataUnsafe?.user?.id) {
+            state.userId = String(tg.initDataUnsafe.user.id);
+        }
+        const p = tg.themeParams;
+        if (p?.bg_color) {
+            document.documentElement.style.setProperty('--tg-theme-bg-color', p.bg_color);
+        }
+    }
+
+    // 3. Background Load
+    if (state.userId) {
+        showStatus("Загрузка...", false);
+        // Start background process
+        loadHistory();
+    } else {
+        showStatus("Не подключен", true);
+        state.access = false;
+        renderHistoryError("Не подключен. Откройте через Telegram.");
+    }
 }
 
-function paintAmountByType_(){
-  els.amountInput.classList.remove("txt-green","txt-red","txt-blue");
-  if (state.type === "in") els.amountInput.classList.add("txt-green");
-  else if (state.type === "out") els.amountInput.classList.add("txt-red");
-  else els.amountInput.classList.add("txt-blue");
+async function loadHistory() {
+    state.loading = true;
+
+    // We don't block UI. User can type.
+    const res = await apiPost({ action: "get_transactions" });
+    state.loading = false;
+
+    if (res.ok) {
+        state.access = true;
+        state.history = res.items || [];
+        state.user = res.user;
+        renderHistory();
+        showStatus("Онлайн", false);
+    } else {
+        state.access = false;
+
+        let msg = "Нет доступа";
+        if (res.error === "network_error") msg = "Не подключен";
+        else if (res.error === "setup_required") msg = "Обратитесь к администратору, регистрация не завершена";
+        else if (res.error === "disabled" || res.error === "access_denied") msg = "Ошибка доступа";
+
+        showStatus(msg, true);
+        renderHistoryError(msg);
+    }
 }
 
-/***************
- * TYPE switch
- ***************/
-function setType_(t){
-  state.type = t;
-
-  // buttons
-  const btns = [els.typeInBtn, els.typeOutBtn, els.typeFxBtn];
-  btns.forEach(b => b.classList.remove("is-active"));
-  btns.forEach(b => b.setAttribute("aria-selected","false"));
-
-  let idx = 0;
-  if (t === "in") { els.typeInBtn.classList.add("is-active"); els.typeInBtn.setAttribute("aria-selected","true"); idx = 0; }
-  if (t === "out") { els.typeOutBtn.classList.add("is-active"); els.typeOutBtn.setAttribute("aria-selected","true"); idx = 1; }
-  if (t === "fx") { els.typeFxBtn.classList.add("is-active"); els.typeFxBtn.setAttribute("aria-selected","true"); idx = 2; }
-
-  // thumb position
-  els.typeThumb.style.transform = `translateX(${idx * 100}%)`;
-
-  // fx block toggle
-  if (t === "fx") {
-    els.fxBlock.classList.remove("is-hidden");
-    updateFxUi_();
-  } else {
-    els.fxBlock.classList.add("is-hidden");
-  }
-
-  // save button color
-  els.saveBtn.classList.remove("btn-in","btn-out","btn-fx");
-  if (t === "in") els.saveBtn.style.background = "var(--green)";
-  else if (t === "out") els.saveBtn.style.background = "var(--red)";
-  else els.saveBtn.style.background = "var(--blue)";
-
-  paintAmountByType_();
+function renderHistoryError(msg) {
+    els.historyList.innerHTML = `<div class="history-error">${msg}</div>`;
 }
 
-function bindType_(){
-  els.typeInBtn.addEventListener("click", () => setType_("in"));
-  els.typeOutBtn.addEventListener("click", () => setType_("out"));
-  els.typeFxBtn.addEventListener("click", () => setType_("fx"));
-}
+/****************
+ * THEME & FORM LOGIC
+ ****************/
+const updateTheme = () => {
+    const t = state.type;
+    const idx = ['in', 'out', 'fx'].indexOf(t);
+    els.typeGlider.style.transform = `translateX(${idx * 100}%)`;
 
-/***************
- * FX logic (relative to UZS)
- * - if main currency is UZS => receive foreign (badge shows selected foreign; default USD)
- * - if main currency is foreign => receive only UZS (badge shows UZS)
- ***************/
-function computeFxCurrency_(mainCur){
-  if (mainCur === "UZS") return "USD";
-  return "UZS";
-}
+    ['in', 'out', 'fx'].forEach(k => {
+        const lbl = els.typeLabels[k];
+        if (k === t) {
+            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-text font-semibold";
+        } else {
+            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-hint hover:text-tg-text";
+        }
+    });
 
-function updateFxUi_(){
-  const mainCur = String(els.currencyInput.value || "UZS");
-  const fxCur = computeFxCurrency_(mainCur);
+    // Colors
+    const setColors = (cls) => {
+        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
+        els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${cls.replace('text-', 'bg-')}`;
+        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
+    };
 
-  els.fxCurBadge.textContent = fxCur;
+    if (t === 'in') {
+        els.amountSign.textContent = "+";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-green-500";
+        els.amountLabel.textContent = "Сумма";
+        els.fxBlock.classList.add("hidden");
+        setColors('text-green-500');
+    } else if (t === 'out') {
+        els.amountSign.textContent = "-";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
+        els.amountLabel.textContent = "Сумма";
+        els.fxBlock.classList.add("hidden");
+        setColors('text-red-500');
+    } else { // fx
+        els.amountSign.textContent = "-";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-blue-500";
+        els.amountLabel.textContent = "Сумма (Отдаю)";
+        els.fxBlock.classList.remove("hidden");
+        setColors('text-blue-500');
+    }
+};
 
-  if (mainCur === "UZS") {
-    els.fxHint.textContent = "Отдаёт UZS → получает валюту";
-  } else {
-    els.fxHint.textContent = "Отдаёт валюту → получает UZS";
-  }
+const checkFxCurrencyLogic = () => {
+    if (els.currencyInput.value !== 'UZS') {
+        if (!els.fxCurrencyInput.querySelector('option[value="UZS"]')) {
+            const opt = document.createElement('option');
+            opt.value = "UZS";
+            opt.textContent = "UZS";
+            els.fxCurrencyInput.add(opt, 0);
+        }
+        els.fxCurrencyInput.value = 'UZS';
+        els.fxCurrencyInput.disabled = true;
+    } else {
+        els.fxCurrencyInput.disabled = false;
+    }
+    calculateFx();
+};
 
-  updateFxComputed_();
-}
+const calculateFx = () => {
+    if (state.type !== 'fx') return;
+    const amt = parseNumber(state.amount);
+    const rate = parseNumber(state.fxRate);
+    if (!amt || !rate) {
+        els.fxTotalDisplay.textContent = `Итого: + 0,00 ${els.fxCurrencyInput.value}`;
+        return;
+    }
+    let res = 0;
+    if (els.currencyInput.value !== 'UZS' && els.fxCurrencyInput.value === 'UZS') {
+        res = amt * rate;
+    } else if (els.currencyInput.value === 'UZS' && els.fxCurrencyInput.value !== 'UZS') {
+        res = amt / rate;
+    } else {
+        res = amt * rate;
+    }
+    els.fxTotalDisplay.textContent = `Итого: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(res)} ${els.fxCurrencyInput.value}`;
+};
 
-function updateFxComputed_(){
-  const mainCur = String(els.currencyInput.value || "UZS");
-  const fxRateRaw = normalizeAmountRaw_(els.fxRateInput.value || "");
-  const amountNum = toNumber_(state.amountRaw || "");
-  const rateNum = toNumber_(fxRateRaw);
-
-  // визуально форматируем курс аккуратно, но без “прыжков”
-  els.fxRateInput.value = formatForDisplay_(fxRateRaw);
-
-  if (!Number.isFinite(amountNum) || amountNum <= 0 || !Number.isFinite(rateNum) || rateNum <= 0) {
-    els.fxAmountInput.value = "";
-    return;
-  }
-
-  const computed = mainCur === "UZS" ? amountNum / rateNum : amountNum * rateNum;
-  els.fxAmountInput.value = formatForDisplay_(fixed2Comma_(computed));
-}
-
-function bindFx_(){
-  els.currencyInput.addEventListener("change", () => {
-    if (state.type === "fx") updateFxUi_();
-  });
-
-  els.fxRateInput.addEventListener("input", () => {
-    updateFxComputed_();
-  });
-
-  els.fxRateInput.addEventListener("blur", () => {
-    const raw = normalizeAmountRaw_(els.fxRateInput.value || "");
-    els.fxRateInput.value = formatForDisplay_(raw.endsWith(",") ? raw.slice(0,-1) : raw);
-    updateFxComputed_();
-  });
-}
-
-/***************
- * PHOTO
- ***************/
-function bindPhoto_(){
-  els.photoInput.addEventListener("change", () => {
-    const f = els.photoInput.files && els.photoInput.files[0] ? els.photoInput.files[0] : null;
-    els.photoName.textContent = f ? (f.name || "photo") : "Не выбрано";
-  });
-  els.removePhotoBtn.addEventListener("click", () => {
+// Events
+els.dateInput.addEventListener('change', () => {
+    const [y, m, d] = els.dateInput.value.split('-');
+    els.dateDisplay.textContent = `${d}.${m}.${y}`;
+    state.date = els.dateInput.value;
+});
+els.typeInputs.forEach(inp => inp.addEventListener('change', () => { state.type = inp.value; updateTheme(); calculateFx(); }));
+els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.amount = val; calculateFx(); }));
+els.currencyInput.addEventListener('change', () => { state.currency = els.currencyInput.value; checkFxCurrencyLogic(); });
+els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.fxRate = val; calculateFx(); }));
+els.fxCurrencyInput.addEventListener('change', () => { state.fxCurrency = els.fxCurrencyInput.value; calculateFx(); });
+els.photoInput.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f) {
+        state.photo = f;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            els.photoPreviewImg.src = ev.target.result;
+            els.photoPreviewWrap.classList.remove('hidden');
+            els.photoLabel.classList.add('hidden');
+        };
+        reader.readAsDataURL(f);
+    }
+});
+els.photoRemoveBtn.addEventListener('click', () => {
+    state.photo = null;
     els.photoInput.value = "";
-    els.photoName.textContent = "Не выбрано";
-  });
-}
+    els.photoPreviewWrap.classList.add('hidden');
+    els.photoLabel.classList.remove('hidden');
+});
 
-function fileToBase64_(file){
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
+/****************
+ * SAVE (Optimistic)
+ ****************/
+els.saveBtn.addEventListener('click', async () => {
+    if (!state.userId) return;
 
-/***************
- * API
- ***************/
-async function apiPost_(payload){
-  if (!API_URL || API_URL.includes("PASTE_YOUR")) throw new Error("API_URL not set");
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
-  return data;
-}
-
-function setStatus_(t){ els.statusPill.textContent = t; }
-
-function renderNotConnected_(){
-  setStatus_("Не подключен");
-  els.historyCount.textContent = "";
-  els.historyList.innerHTML = `<div class="history-empty">Не подключен</div>`;
-}
-
-function renderHistory_(items){
-  const list = (items || []).slice(0, HISTORY_LIMIT);
-  els.historyCount.textContent = list.length ? `${list.length}` : "";
-
-  if (!list.length) {
-    els.historyList.innerHTML = `<div class="history-empty">Пока нет данных</div>`;
-    return;
-  }
-
-  els.historyList.innerHTML = "";
-  for (const it of list) {
-    const type = String(it.type || "");
-    const isIn = type === "Получил";
-    const isOut = type === "Отдал";
-    const isFx = type === "Обменял";
-
-    const signClass = isIn ? "txt-green" : isOut ? "txt-red" : "txt-blue";
-    const ic = isIn ? "+" : isOut ? "−" : "⇄";
-
-    const div = document.createElement("div");
-    div.className = `h-item ${isFx ? "is-fx" : ""} ${it.__optimistic ? "optimistic" : ""} ${it.__failed ? "failed" : ""}`;
-
-    div.innerHTML = `
-      <div class="h-ic ${signClass}">${ic}</div>
-      <div class="h-body">
-        <div class="h-top">
-          <div>
-            <div class="h-title">${escapeHtml_(type)}</div>
-            <div class="h-date">${escapeHtml_(it.date || "")}${it.__optimistic && !it.__failed ? " · Сохраняется…" : it.__failed ? " · Не удалось" : ""}</div>
-          </div>
-          <div>
-            <div class="h-amt ${signClass}">${escapeHtml_(it.amount_main || "")}</div>
-            ${it.amount_sub ? `<div class="h-sub">${escapeHtml_(it.amount_sub)}</div>` : ""}
-          </div>
-        </div>
-      </div>
-    `;
-
-    els.historyList.appendChild(div);
-  }
-}
-
-function escapeHtml_(s){
-  return String(s||"")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
-}
-
-/***************
- * Background: load history without blocking input
- ***************/
-async function backgroundLoadHistory_(){
-  if (!state.userId) {
-    renderNotConnected_();
-    return;
-  }
-
-  try {
-    const data = await apiPost_({ action: "get_transactions", user_id: state.userId });
-    if (!data || data.ok !== true || !Array.isArray(data.items)) {
-      renderNotConnected_();
-      return;
+    // Check Access
+    if (state.access === false) {
+        alert("Нет доступа к сохранению");
+        return;
     }
-    setStatus_("Подключен");
-    state.history = data.items;
-    renderHistory_(state.history);
-  } catch {
-    renderNotConnected_();
-  }
-}
-
-/***************
- * Save with optimistic item
- ***************/
-function buildOptimisticItem_(){
-  const date = isoToDMY_(els.dateInput.value);
-  const cur = String(els.currencyInput.value || "").trim();
-  const amount = normalizeAmountRaw_(state.amountRaw || "");
-  const typeKey = state.type;
-
-  const type = typeKey === "in" ? "Получил" : typeKey === "out" ? "Отдал" : "Обменял";
-  const sign = typeKey === "in" ? "+" : "-";
-  const amount_main = `${sign} ${amount} ${cur}`.trim();
-
-  let amount_sub = "";
-  if (typeKey === "fx") {
-    const fxRateRaw = normalizeAmountRaw_(els.fxRateInput.value || "");
-    const amountNum = toNumber_(amount);
-    const rateNum = toNumber_(fxRateRaw);
-    if (Number.isFinite(amountNum) && amountNum > 0 && Number.isFinite(rateNum) && rateNum > 0) {
-      const fxCur = computeFxCurrency_(cur);
-      const computed = cur === "UZS" ? amountNum / rateNum : amountNum * rateNum;
-      amount_sub = `+ ${fixed2Comma_(computed)} ${fxCur}`.trim();
-    }
-  }
-
-  return {
-    __id: "tmp_" + Math.random().toString(16).slice(2),
-    __optimistic: true,
-    date,
-    type,
-    amount_main,
-    amount_sub
-  };
-}
-
-function markOptimisticFailed_(id){
-  if (!Array.isArray(state.history)) return;
-  state.history = state.history.map(x => x.__id === id ? { ...x, __failed: true } : x);
-  renderHistory_(state.history);
-}
-
-async function onSave_(){
-  if (state.isSaving) return;
-
-  if (!state.userId) {
-    setStatus_("Не подключен");
-    return;
-  }
-
-  // validation: all required except photo
-  const dateDMY = isoToDMY_(els.dateInput.value);
-  if (!/^\d{2}\.\d{2}\.\d{4}$/.test(dateDMY)) { setStatus_("Ошибка даты"); return; }
-
-  const amountRaw = normalizeAmountRaw_(state.amountRaw || "");
-  if (!amountRaw || !(toNumber_(amountRaw) > 0)) { setStatus_("Ошибка суммы"); return; }
-
-  const currency = String(els.currencyInput.value || "").trim();
-  if (!currency) { setStatus_("Ошибка валюты"); return; }
-
-  const counterparty = String(els.counterpartyInput.value || "").trim();
-  if (!counterparty) { setStatus_("Заполните контрагента"); return; }
-
-  const comment = String(els.commentInput.value || "").trim();
-  if (!comment) { setStatus_("Заполните комментарий"); return; }
-
-  // FX fields
-  let fx_rate_raw = "";
-  let fx_currency = "";
-  if (state.type === "fx") {
-    fx_rate_raw = normalizeAmountRaw_(els.fxRateInput.value || "");
-    if (!fx_rate_raw || !(toNumber_(fx_rate_raw) > 0)) { setStatus_("Ошибка курса"); return; }
-    fx_currency = computeFxCurrency_(currency);
-  }
-
-  // optimistic UI
-  if (!Array.isArray(state.history)) state.history = [];
-  const optimistic = buildOptimisticItem_();
-  state.history = [optimistic, ...state.history];
-  renderHistory_(state.history);
-
-  // build payload
-  let photo_base64 = "";
-  let photo_filename = "";
-  let photo_mime = "";
-
-  const file = els.photoInput.files && els.photoInput.files[0] ? els.photoInput.files[0] : null;
-  if (file) {
-    photo_filename = file.name || "photo.jpg";
-    photo_mime = file.type || "image/jpeg";
-    const b64 = await fileToBase64_(file);
-    photo_base64 = String(b64).split(",").pop(); // remove data: prefix
-  }
-
-  const payload = {
-    action: "save_transaction",
-    user_id: state.userId,
-    type: state.type,
-    date: dateDMY,
-    currency,
-    amount_raw: amountRaw,
-    counterparty,
-    comment
-  };
-
-  if (state.type === "fx") {
-    payload.fx_rate_raw = fx_rate_raw;
-    payload.fx_currency = fx_currency;
-  }
-
-  if (photo_base64) {
-    payload.photo_base64 = photo_base64;
-    payload.photo_filename = photo_filename;
-    payload.photo_mime = photo_mime;
-  }
-
-  state.isSaving = true;
-  els.saveBtn.setAttribute("disabled","disabled");
-  setStatus_("Сохраняется…");
-
-  try {
-    const res = await apiPost_(payload);
-    if (!res || res.ok !== true) {
-      markOptimisticFailed_(optimistic.__id);
-      setStatus_("Не получилось сохранить");
-      return;
+    if (state.access === null) {
+        alert("Подождите загрузки доступа...");
+        return;
     }
 
-    setStatus_("Сохранено");
+    if (!state.amount || parseNumber(state.amount) === 0) { alert("Введите сумму"); return; }
+    if (!els.counterpartyInput.value.trim()) { alert("Введите контрагента"); return; }
 
-    // background refresh
-    await backgroundLoadHistory_();
+    // 1. Prepare Payload
+    const [y, m, d] = state.date.split('-');
+    const dateFormatted = `${d}.${m}.${y}`;
+    const payload = {
+        action: "save_transaction",
+        user_id: state.userId,
+        type: state.type,
+        date: dateFormatted,
+        currency: els.currencyInput.value,
+        amount_raw: state.amount.replace(/\s/g, ''),
+        counterparty: els.counterpartyInput.value.trim(),
+        comment: els.commentInput.value.trim()
+    };
+    if (state.type === 'fx') {
+        payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
+        payload.fx_currency = els.fxCurrencyInput.value;
+    }
+    let photoBase64 = null;
+    if (state.photo) {
+        try {
+            const base64Full = await fileToBase64(state.photo);
+            photoBase64 = base64Full.split(',')[1];
+            payload.photo_base64 = photoBase64;
+            payload.photo_filename = state.photo.name;
+        } catch (e) { console.error(e); }
+    }
 
-    // reset form (keep date)
-    state.amountRaw = "";
+    // 2. OPTIMISTIC UI: Render Transaction Immediately
+    const tempId = "temp_" + Date.now();
+    const tempItem = {
+        date: dateFormatted,
+        type: state.type, // "in"/"out"/"fx" - logic needs translation?
+        // Translate type for UI to match what server returns?
+        // Server saves "in". Client "renderHistory" expects "in" or "Получил".
+        // My render logic handles "in".
+        amount_main: formatCurrency(parseNumber(state.amount), els.currencyInput.value),
+        amount_sub: "", // Simplified for temp
+        desc: payload.counterparty,
+        temp: true // Flag
+    };
+
+    // Prepend to history local
+    state.history.unshift(tempItem);
+    renderHistory(); // Re-render with temp item
+
+    // UI Cleanup
+    state.amount = "";
     els.amountInput.value = "";
-    els.counterpartyInput.value = "";
-    els.commentInput.value = "";
-    els.photoInput.value = "";
-    els.photoName.textContent = "Не выбрано";
+    state.fxRate = "";
     els.fxRateInput.value = "";
-    els.fxAmountInput.value = "";
-    if (state.type === "fx") updateFxUi_();
-  } catch {
-    markOptimisticFailed_(optimistic.__id);
-    setStatus_("Не получилось сохранить");
-  } finally {
-    state.isSaving = false;
-    els.saveBtn.removeAttribute("disabled");
-  }
-}
+    els.commentInput.value = "";
+    els.counterpartyInput.value = "";
+    state.photo = null;
+    els.photoRemoveBtn.click();
 
-/***************
- * INIT
- ***************/
-function init_(){
-  initTelegram_();
+    // Show success visual briefly on button?
+    els.saveBtnText.textContent = "Сохраняется...";
+    els.saveBtn.disabled = true;
 
-  setToday_();
-  bindDate_();
-  bindType_();
-  bindAmount_();
-  bindFx_();
-  bindPhoto_();
+    // 3. Send Request
+    const res = await apiPost(payload);
 
-  // initial
-  setType_("in");
-  paintAmountByType_();
+    // 4. Handle Result
+    if (res.ok) {
+        els.saveBtnText.textContent = "Сохранено!";
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
 
-  // do not block: run in background
-  setStatus_("Проверка…");
-  backgroundLoadHistory_();
+        // Reload actual history to confirm and get real data
+        await loadHistory();
+    } else {
+        els.saveBtnText.textContent = "Ошибка";
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
 
-  els.saveBtn.addEventListener("click", onSave_);
-
-  // if Telegram theme changes (rare): just re-render history (for fx dark fill in dark theme)
-  try {
-    if (state.tg && state.tg.onEvent) {
-      state.tg.onEvent("themeChanged", () => renderHistory_(state.history || []));
+        // Remove temp item? Or mark error?
+        // Simplest: Reload history (which will remove temp item since it wasn't saved)
+        alert("Ошибка при сохранении: " + (res.error || "unknown"));
+        state.history = state.history.filter(x => x !== tempItem);
+        renderHistory();
     }
-  } catch {}
+
+    setTimeout(() => {
+        els.saveBtnText.textContent = "Сохранить";
+        els.saveBtn.disabled = false;
+    }, 1500);
+});
+
+function renderHistory() {
+    if (!state.history) return;
+    els.historyCount.textContent = `${state.history.length}`;
+    els.historyList.innerHTML = "";
+
+    state.history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "bg-tg-secondaryBg p-3 rounded-2xl flex gap-3 items-center transition-all duration-300";
+
+        // Optimistic State Style
+        if (item.temp) {
+            div.classList.add("opacity-50", "animate-pulse");
+            div.innerHTML += `<div class="absolute inset-0 flex items-center justify-center text-[12px] font-bold text-blue-500">Сохраняется...</div>`;
+        }
+
+        let iconColor = 'text-gray-500';
+        let iconBg = 'bg-gray-100';
+        let arrow = '';
+
+        const typeRaw = (item.type || "").toLowerCase();
+
+        if (typeRaw.includes('in') || typeRaw.includes('получил')) {
+            iconColor = 'text-green-500';
+            iconBg = 'bg-green-500/10';
+            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+        } else if (typeRaw.includes('out') || typeRaw.includes('отдал')) {
+            iconColor = 'text-red-500';
+            iconBg = 'bg-red-500/10';
+            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
+        } else { // FX
+            iconColor = 'text-blue-500';
+            iconBg = 'bg-blue-500/10';
+            arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>`;
+        }
+
+        const dateStr = item.date;
+        const amountStr = item.amount_main;
+        const subStr = item.amount_sub || item.counterparty || (item.temp ? item.desc : "") || "";
+
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-full ${iconBg} ${iconColor} flex items-center justify-center shrink-0">
+                ${arrow}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center">
+                    <span class="text-tg-text font-medium truncate pr-2">${item.desc || (item.temp ? "..." : (item.type || "Запись"))}</span>
+                    <span class="text-tg-text font-semibold shrink-0 ${iconColor}">${amountStr}</span>
+                </div>
+                <div class="flex justify-between items-center mt-1">
+                    <span class="text-[13px] text-tg-hint truncate w-2/3">${subStr}</span>
+                    <span class="text-[12px] text-tg-hint shrink-0">${item.temp ? "Сохранение..." : dateStr}</span>
+                </div>
+            </div>
+        `;
+        els.historyList.appendChild(div);
+    });
 }
 
-document.addEventListener("DOMContentLoaded", init_);
+function formatCurrency(val, cur) {
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val) + " " + cur;
+}
+
+// Init
+initApp();
