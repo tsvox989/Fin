@@ -28,3 +28,13 @@ body {
     height: 100%;
     margin: 0;
 }
+
+/* History Error State */
+.history-error {
+    text-align: center;
+    color: var(--tg-theme-hint-color, #999);
+    padding: 20px;
+    background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+    border-radius: 12px;
+    font-size: 14px;
+}

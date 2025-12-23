@@ -72,13 +72,25 @@
                     <!-- Type -->
                     <div class="w-3/4 min-w-0">
                         <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
-                        <div class="flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center" id="typeSeg">
-                            <button type="button" data-val="in"
-                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Получил</button>
-                            <button type="button" data-val="out"
-                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Отдал</button>
-                            <button type="button" data-val="fx"
-                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Обменял</button>
+                        <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden"
+                            id="typeSeg">
+                            <!-- Glider background -->
+                            <div id="typeGlider"
+                                class="absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white rounded-lg shadow-sm transition-all duration-200 ease-out left-1">
+                            </div>
+
+                            <!-- Radios (Hidden) -->
+                            <input type="radio" name="txnType" id="typeIn" value="in" class="hidden" checked>
+                            <input type="radio" name="txnType" id="typeOut" value="out" class="hidden">
+                            <input type="radio" name="txnType" id="typeFx" value="fx" class="hidden">
+
+                            <!-- Labels -->
+                            <label for="typeIn"
+                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Получил</label>
+                            <label for="typeOut"
+                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Отдал</label>
+                            <label for="typeFx"
+                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Обменял</label>
                         </div>
                     </div>
                 </div>
@@ -131,6 +143,14 @@
                     </div>
                 </div>
 
+                <!-- Counterparty -->
+                <div>
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент *</label>
+                    <input id="counterpartyInput" required placeholder="Магазин, такси..."
+                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
+                        type="text" />
+                </div>
+
                 <!-- Comment -->
                 <div>
                     <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
@@ -173,18 +193,8 @@
 
                 <!-- Save Btn -->
                 <button type="button" id="saveBtn"
-                    class="w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 bg-blue-500">
-                    <div class="flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z">
-                            </path>
-                            <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path>
-                            <path d="M7 3v4a1 1 0 0 0 1 1h7"></path>
-                        </svg>
-                        <span id="saveBtnText">Сохранить</span>
-                    </div>
+                    class="w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 bg-blue-500 font-medium">
+                    <span id="saveBtnText">Сохранить</span>
                 </button>
             </form>
         </section>
