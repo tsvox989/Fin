@@ -1,227 +1,126 @@
-<!DOCTYPE html>
-<html lang="ru" style="--tg-viewport-height: 100vh; --tg-viewport-stable-height: 100vh;">
-
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Money Tracker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Money Tracker</title>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Telegram WebApp SDK (нужен для получения user.id и темы) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <style>
-        @import url(https://fonts.googleapis.com/css?family=Google+Sans+Text);
-
-        html {
-            font-family: 'Google Sans Text', 'Google Sans', sans-serif;
-        }
-    </style>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        tg: {
-                            bg: 'var(--tg-theme-bg-color, #ffffff)',
-                            text: 'var(--tg-theme-text-color, #000000)',
-                            hint: 'var(--tg-theme-hint-color, #999999)',
-                            link: 'var(--tg-theme-link-color, #2481cc)',
-                            button: 'var(--tg-theme-button-color, #3390ec)',
-                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
-                            secondaryBg: 'var(--tg-theme-secondary-bg-color, #f4f4f5)',
-                            headerBg: 'var(--tg-theme-header-bg-color, #ffffff)',
-                        },
-                        green: { 50: '#f5f7ed', 100: '#e8eed9', 200: '#dce4c7', 300: '#c5d3a5', 400: '#89a348', 500: '#6c8623', 600: '#566b1c', 700: '#435416', 800: '#344111', 900: '#2a350e' },
-                        red: { 50: '#faf4f5', 100: '#f4e3e6', 200: '#e6c8ce', 300: '#d4a5ae', 400: '#b86675', 500: '#9e3f4f', 600: '#7e323f', 700: '#632731', 800: '#522029', 900: '#451d24' },
-                        blue: { 50: '#f2f9fb', 100: '#e0f1f6', 200: '#cfe6ed', 300: '#abd4e0', 400: '#4fa3bd', 500: '#0a7d9b', 600: '#08647c', 700: '#064e61', 800: '#054050', 900: '#043542' }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <link rel="stylesheet" href="./app.css" />
+  <link rel="stylesheet" href="./app.css" />
 </head>
-
-<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col">
-
-    <main class="container mx-auto max-w-md p-4 space-y-8 flex-grow">
-        <!-- FORM SECTION -->
-        <section>
-            <form id="txnForm" class="flex flex-col gap-5">
-
-                <!-- Date + Type Row -->
-                <div class="flex gap-3">
-                    <!-- Date -->
-                    <div class="w-1/4 min-w-0">
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Дата</label>
-                        <div class="relative h-[52px]">
-                            <!-- Visual Date (DD.MM.YYYY) -->
-                            <div
-                                class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
-                                <span id="dateDisplay" class="truncate w-full">--.--.----</span>
-                            </div>
-                            <!-- Actual Input -->
-                            <input id="dateInput"
-                                class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
-                                required type="date" />
-                        </div>
-                    </div>
-
-                    <!-- Type -->
-                    <div class="w-3/4 min-w-0">
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
-                        <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden"
-                            id="typeSeg">
-                            <!-- Glider background -->
-                            <div id="typeGlider"
-                                class="absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white rounded-lg shadow-sm transition-all duration-200 ease-out left-1">
-                            </div>
-
-                            <!-- Radios (Hidden) -->
-                            <input type="radio" name="txnType" id="typeIn" value="in" class="hidden" checked>
-                            <input type="radio" name="txnType" id="typeOut" value="out" class="hidden">
-                            <input type="radio" name="txnType" id="typeFx" value="fx" class="hidden">
-
-                            <!-- Labels -->
-                            <label for="typeIn"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Получил</label>
-                            <label for="typeOut"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Отдал</label>
-                            <label for="typeFx"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Обменял</label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Amount + Currency -->
-                <div>
-                    <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма</label>
-                    <div class="flex gap-2">
-                        <div class="relative w-3/4">
-                            <span id="amountSign" class="absolute left-3 top-1/2 -translate-y-1/2 text-[16px]">+</span>
-                            <input id="amountInput" inputmode="decimal" placeholder="0,00"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6"
-                                required type="text" />
-                        </div>
-                        <div class="w-1/4">
-                            <select id="currencyInput"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
-                                <option value="UZS">UZS</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="RUB">RUB</option>
-                                <option value="KZT">KZT</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FX Block -->
-                <div id="fxBlock" class="hidden p-4 bg-blue-50/50 rounded-2xl border border-blue-200/20 space-y-2">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс <span
-                            class="text-[12px] opacity-70 ml-1">(UZS за 1 ед.)</span></label>
-                    <div class="flex gap-2 items-center">
-                        <div class="w-3/4">
-                            <input id="fxRateInput" inputmode="decimal" placeholder="Курс"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
-                                type="text" />
-                        </div>
-                        <div class="w-1/4">
-                            <select id="fxCurrencyInput"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="RUB">RUB</option>
-                                <option value="KZT">KZT</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="pt-1 pl-1">
-                        <span id="fxTotalDisplay" class="text-[14px] text-green-500">Итого: + 0,00 UZS</span>
-                    </div>
-                </div>
-
-                <!-- Counterparty -->
-                <div>
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент *</label>
-                    <input id="counterpartyInput" required placeholder="Магазин, такси..."
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
-                        type="text" />
-                </div>
-
-                <!-- Comment -->
-                <div>
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
-                    <textarea id="commentInput" placeholder="Детали операции..." rows="2"
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
-                </div>
-
-                <!-- Photo -->
-                <div>
-                    <label id="photoLabel"
-                        class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer hover:border-blue-400 transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-camera">
-                            <path
-                                d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z">
-                            </path>
-                            <circle cx="12" cy="13" r="3"></circle>
-                        </svg>
-                        <span class="text-[14px]">Добавить фото</span>
-                        <input id="photoInput" accept="image/*" class="hidden" type="file" />
-                    </label>
-                    <!-- Preview Container -->
-                    <div id="photoPreviewWrap"
-                        class="hidden relative rounded-xl overflow-hidden h-32 w-full border border-tg-hint/20 group">
-                        <img id="photoPreviewImg" class="w-full h-full object-cover" />
-                        <div
-                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <button type="button" id="photoRemoveBtn" class="bg-red-500 text-white p-2 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M18 6 6 18" />
-                                    <path d="m6 6 12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save Btn -->
-                <button type="button" id="saveBtn"
-                    class="w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 bg-blue-500 font-medium">
-                    <span id="saveBtnText">Сохранить</span>
-                </button>
-            </form>
-        </section>
-
-        <!-- HISTORY SECTION -->
-        <section class="pb-4">
-            <div class="flex items-center justify-between mb-3 px-1">
-                <h2 class="text-[14px] text-tg-text">Последние записи</h2>
-                <span id="historyCount" class="text-[14px] text-tg-hint bg-tg-secondaryBg px-2 py-1 rounded-lg">0 /
-                    0</span>
-            </div>
-            <div id="historyList" class="space-y-3"></div>
-        </section>
-    </main>
-
-    <!-- FOOTER / STATUS -->
-    <footer
-        class="sticky bottom-0 w-full py-2 bg-gradient-to-t from-tg-bg to-transparent flex justify-center pb-4 backdrop-blur-[2px]">
-        <div id="statusPill"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors text-tg-hint bg-tg-secondaryBg">
-            <span>...</span>
+<body>
+  <main class="app">
+    <section class="card form-card" aria-label="Форма транзакции">
+      <div class="row row-compact">
+        <div class="col col-date">
+          <label class="label">Дата<span class="req">*</span></label>
+          <button id="dateBtn" class="control control-date" type="button">
+            <span id="dateText">--.--.----</span>
+          </button>
+          <input id="dateInput" class="sr-only" type="date" />
         </div>
-    </footer>
 
-    <!-- TOAST (Optional extra from previous, but maybe not needed if pill is enough. Keeping logic in JS just in case) -->
+        <div class="col col-type">
+          <label class="label">Тип<span class="req">*</span></label>
 
-    <script src="./app.js"></script>
+          <!-- Переключатель (3 позиции) -->
+          <div class="type-switch" role="tablist" aria-label="Тип операции">
+            <button id="typeInBtn" class="type-btn is-active" type="button" role="tab" aria-selected="true" data-type="in">Получил</button>
+            <button id="typeOutBtn" class="type-btn" type="button" role="tab" aria-selected="false" data-type="out">Отдал</button>
+            <button id="typeFxBtn" class="type-btn" type="button" role="tab" aria-selected="false" data-type="fx">Обменял</button>
+            <span id="typeThumb" class="type-thumb" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-amount">
+          <label class="label">Сумма<span class="req">*</span></label>
+          <input id="amountInput" class="control control-amount" inputmode="decimal" autocomplete="off" placeholder="0" />
+        </div>
+
+        <div class="col col-cur">
+          <label class="label">Валюта<span class="req">*</span></label>
+          <select id="currencyInput" class="control">
+            <option value="UZS" selected>UZS</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="RUB">RUB</option>
+            <option value="KZT">KZT</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="fxBlock" class="fx-block is-hidden" aria-label="Блок обмена">
+        <div class="row row-fx-head">
+          <div class="fx-title">Обмен относительно UZS</div>
+          <div id="fxHint" class="fx-hint"></div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label class="label">Курс<span class="req">*</span></label>
+            <input id="fxRateInput" class="control" inputmode="decimal" autocomplete="off" placeholder="0" />
+          </div>
+
+          <div class="col">
+            <label class="label">Получит</label>
+            <div class="fx-recv">
+              <input id="fxAmountInput" class="control is-readonly" readonly />
+              <span id="fxCurBadge" class="fx-badge">USD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label class="label">Контрагент<span class="req">*</span></label>
+          <input id="counterpartyInput" class="control" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label class="label">Комментарий<span class="req">*</span></label>
+          <textarea id="commentInput" class="control control-textarea" rows="2"></textarea>
+        </div>
+      </div>
+
+      <div class="row row-photo">
+        <div class="col">
+          <label class="label">Фото</label>
+          <div class="photo-row">
+            <label class="photo-btn" for="photoInput">Выбрать</label>
+            <input id="photoInput" class="sr-only" type="file" accept="image/*" />
+            <div class="photo-meta">
+              <div id="photoName" class="photo-name">Не выбрано</div>
+              <button id="removePhotoBtn" class="photo-remove" type="button">Убрать</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="saveBtn" class="btn btn-primary" type="button">Сохранить</button>
+      <div class="footer-row">
+        <span id="statusPill" class="pill">Проверка…</span>
+      </div>
+    </section>
+
+    <section class="card history-card" aria-label="История">
+      <div class="history-head">
+        <div class="history-title">История</div>
+        <div id="historyCount" class="history-count"></div>
+      </div>
+
+      <div id="historyList" class="history-list">
+        <div class="history-empty">Загрузка…</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js" defer></script>
 </body>
-
 </html>
