@@ -1,166 +1,217 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" style="--tg-viewport-height: 100vh; --tg-viewport-stable-height: 100vh;">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>fintxn</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Tracker</title>
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              bg: "#0b121a",
-              glass: "rgba(255,255,255,.06)",
-              line: "rgba(255,255,255,.10)",
-              muted: "rgba(255,255,255,.45)",
-              green: "#6f8f22",
-              red: "#8f3b4a",
-              blue: "#0a7d9b",
-            }
-          },
-          borderRadius: { xl2: "18px" },
-          boxShadow: {
-            inset: "inset 0 1px 0 rgba(255,255,255,.06)",
-            soft: "0 14px 30px rgba(0,0,0,.35)",
-          }
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Google+Sans+Text);
+
+        html {
+            font-family: 'Google Sans Text', 'Google Sans', sans-serif;
         }
-      }
-    }
-  </script>
+    </style>
 
-  <link rel="stylesheet" href="./app.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tg: {
+                            bg: 'var(--tg-theme-bg-color, #ffffff)',
+                            text: 'var(--tg-theme-text-color, #000000)',
+                            hint: 'var(--tg-theme-hint-color, #999999)',
+                            link: 'var(--tg-theme-link-color, #2481cc)',
+                            button: 'var(--tg-theme-button-color, #3390ec)',
+                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
+                            secondaryBg: 'var(--tg-theme-secondary-bg-color, #f4f4f5)',
+                            headerBg: 'var(--tg-theme-header-bg-color, #ffffff)',
+                        },
+                        green: { 50: '#f5f7ed', 100: '#e8eed9', 200: '#dce4c7', 300: '#c5d3a5', 400: '#89a348', 500: '#6c8623', 600: '#566b1c', 700: '#435416', 800: '#344111', 900: '#2a350e' },
+                        red: { 50: '#faf4f5', 100: '#f4e3e6', 200: '#e6c8ce', 300: '#d4a5ae', 400: '#b86675', 500: '#9e3f4f', 600: '#7e323f', 700: '#632731', 800: '#522029', 900: '#451d24' },
+                        blue: { 50: '#f2f9fb', 100: '#e0f1f6', 200: '#cfe6ed', 300: '#abd4e0', 400: '#4fa3bd', 500: '#0a7d9b', 600: '#08647c', 700: '#064e61', 800: '#054050', 900: '#043542' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="./app.css" />
 </head>
 
-<body class="min-h-screen bg-brand-bg text-white">
-  <div class="min-h-screen w-full flex justify-center">
-    <div class="w-full max-w-md px-4 pb-24 pt-6 space-y-5">
+<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col">
 
-      <!-- Date + Type -->
-      <section class="grid grid-cols-2 gap-3">
-        <div>
-          <div class="label">Дата</div>
-          <div class="glass-input">
-            <input id="date" type="date" class="w-full bg-transparent outline-none" />
-          </div>
-        </div>
+    <main class="container mx-auto max-w-md p-4 space-y-8 flex-grow">
+        <!-- FORM SECTION -->
+        <section>
+            <form id="txnForm" class="flex flex-col gap-5">
 
-        <div>
-          <div class="label">Тип</div>
-          <div class="glass-seg">
-            <button class="seg-btn" data-type="in">Получил</button>
-            <button class="seg-btn" data-type="out">Отдал</button>
-            <button class="seg-btn" data-type="fx">Обменял</button>
-          </div>
-        </div>
-      </section>
+                <!-- Date + Type Row -->
+                <div class="flex gap-3">
+                    <!-- Date -->
+                    <div class="w-1/4 min-w-0">
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Дата</label>
+                        <div class="relative h-[52px]">
+                            <!-- Visual Date (DD.MM.YYYY) -->
+                            <div
+                                class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
+                                <span id="dateDisplay" class="truncate w-full">--.--.----</span>
+                            </div>
+                            <!-- Actual Input -->
+                            <input id="dateInput"
+                                class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+                                required type="date" />
+                        </div>
+                    </div>
 
-      <!-- Amount + Currency -->
-      <section>
-        <div class="label" id="amountLabel">Сумма</div>
+                    <!-- Type -->
+                    <div class="w-3/4 min-w-0">
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
+                        <div class="flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center" id="typeSeg">
+                            <button type="button" data-val="in"
+                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Получил</button>
+                            <button type="button" data-val="out"
+                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Отдал</button>
+                            <button type="button" data-val="fx"
+                                class="flex-1 py-2 text-[14px] rounded-lg transition-all duration-200 h-full text-tg-hint hover:text-tg-text">Обменял</button>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="grid grid-cols-3 gap-3">
-          <div class="glass-input col-span-2">
-            <input id="amount" type="text" inputmode="decimal"
-              class="w-full bg-transparent outline-none money-input"
-              placeholder="+ 0,00" />
-          </div>
+                <!-- Amount + Currency -->
+                <div>
+                    <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма</label>
+                    <div class="flex gap-2">
+                        <div class="relative w-3/4">
+                            <span id="amountSign" class="absolute left-3 top-1/2 -translate-y-1/2 text-[16px]">+</span>
+                            <input id="amountInput" inputmode="decimal" placeholder="0,00"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6"
+                                required type="text" />
+                        </div>
+                        <div class="w-1/4">
+                            <select id="currencyInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
+                                <option value="UZS">UZS</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="RUB">RUB</option>
+                                <option value="KZT">KZT</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-          <div class="glass-input p-0 overflow-hidden">
-            <select id="curMain" class="w-full h-[52px] bg-transparent outline-none px-3 font-semibold">
-              <option value="UZS">UZS</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="RUB">RUB</option>
-              <option value="KZT">KZT</option>
-            </select>
-          </div>
-        </div>
-      </section>
+                <!-- FX Block -->
+                <div id="fxBlock" class="hidden p-4 bg-blue-50/50 rounded-2xl border border-blue-200/20 space-y-2">
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс <span
+                            class="text-[12px] opacity-70 ml-1">(UZS за 1 ед.)</span></label>
+                    <div class="flex gap-2 items-center">
+                        <div class="w-3/4">
+                            <input id="fxRateInput" inputmode="decimal" placeholder="Курс"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
+                                type="text" />
+                        </div>
+                        <div class="w-1/4">
+                            <select id="fxCurrencyInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="RUB">RUB</option>
+                                <option value="KZT">KZT</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pt-1 pl-1">
+                        <span id="fxTotalDisplay" class="text-[14px] text-green-500">Итого: + 0,00 UZS</span>
+                    </div>
+                </div>
 
-      <!-- FX block (Exchange relative to UZS) -->
-      <section id="fxBlock" class="fx-block hidden">
-        <div class="fx-wrap">
-          <div class="label mb-2" id="fxHint">Курс UZS на 1 ед. валюты</div>
+                <!-- Comment -->
+                <div>
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
+                    <textarea id="commentInput" placeholder="Детали операции..." rows="2"
+                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
+                </div>
 
-          <div class="grid grid-cols-3 gap-3">
-            <div class="glass-input col-span-2">
-              <input id="fxRate" type="text" inputmode="decimal"
-                class="w-full bg-transparent outline-none"
-                placeholder="0,00" />
+                <!-- Photo -->
+                <div>
+                    <label id="photoLabel"
+                        class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer hover:border-blue-400 transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-camera">
+                            <path
+                                d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z">
+                            </path>
+                            <circle cx="12" cy="13" r="3"></circle>
+                        </svg>
+                        <span class="text-[14px]">Добавить фото</span>
+                        <input id="photoInput" accept="image/*" class="hidden" type="file" />
+                    </label>
+                    <!-- Preview Container -->
+                    <div id="photoPreviewWrap"
+                        class="hidden relative rounded-xl overflow-hidden h-32 w-full border border-tg-hint/20 group">
+                        <img id="photoPreviewImg" class="w-full h-full object-cover" />
+                        <div
+                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" id="photoRemoveBtn" class="bg-red-500 text-white p-2 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M18 6 6 18" />
+                                    <path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Btn -->
+                <button type="button" id="saveBtn"
+                    class="w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 bg-blue-500">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z">
+                            </path>
+                            <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path>
+                            <path d="M7 3v4a1 1 0 0 0 1 1h7"></path>
+                        </svg>
+                        <span id="saveBtnText">Сохранить</span>
+                    </div>
+                </button>
+            </form>
+        </section>
+
+        <!-- HISTORY SECTION -->
+        <section class="pb-4">
+            <div class="flex items-center justify-between mb-3 px-1">
+                <h2 class="text-[14px] text-tg-text">Последние записи</h2>
+                <span id="historyCount" class="text-[14px] text-tg-hint bg-tg-secondaryBg px-2 py-1 rounded-lg">0 /
+                    0</span>
             </div>
+            <div id="historyList" class="space-y-3"></div>
+        </section>
+    </main>
 
-            <div class="glass-input p-0 overflow-hidden">
-              <select id="curFx" class="w-full h-[52px] bg-transparent outline-none px-3 font-semibold">
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="RUB">RUB</option>
-                <option value="KZT">KZT</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="mt-2 text-sm" id="fxTotalLine">
-            <span class="fx-total">Итого: + 0,00</span>
-          </div>
+    <!-- FOOTER / STATUS -->
+    <footer
+        class="sticky bottom-0 w-full py-2 bg-gradient-to-t from-tg-bg to-transparent flex justify-center pb-4 backdrop-blur-[2px]">
+        <div id="statusPill"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors text-tg-hint bg-tg-secondaryBg">
+            <span>...</span>
         </div>
-      </section>
+    </footer>
 
-      <!-- Counterparty (hidden for fx) -->
-      <section id="counterpartyBlock">
-        <div class="label">Контрагент</div>
-        <div class="glass-input">
-          <input id="counterparty" type="text" class="w-full bg-transparent outline-none" placeholder="Имя, магазин..." />
-        </div>
-      </section>
+    <!-- TOAST (Optional extra from previous, but maybe not needed if pill is enough. Keeping logic in JS just in case) -->
 
-      <!-- Comment -->
-      <section>
-        <div class="label">Комментарий</div>
-        <div class="glass-input">
-          <input id="comment" type="text" class="w-full bg-transparent outline-none" placeholder="Детали операции..." />
-        </div>
-      </section>
-
-      <!-- Photo -->
-      <section>
-        <label class="photo-drop" for="photo">
-          <div class="flex items-center gap-3">
-            <div class="icon-cam">📷</div>
-            <div class="text-brand-muted">Добавить фото</div>
-          </div>
-          <input id="photo" type="file" accept="image/*" class="hidden" />
-        </label>
-        <div id="photoMeta" class="hint mt-2 hidden"></div>
-      </section>
-
-      <!-- Save -->
-      <section>
-        <button id="btnSave" class="btn-save btn-save--blue">Сохранить</button>
-      </section>
-
-      <!-- Last records -->
-      <section class="mt-6">
-        <div class="flex items-center justify-between">
-          <div class="text-lg font-semibold">Последние записи</div>
-          <div class="pill-counter" id="pager">0 / 0</div>
-        </div>
-
-        <div id="list" class="mt-4 space-y-3"></div>
-      </section>
-
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div id="toast" class="toast hidden">
-    <div class="toast-inner"><span id="toastText">Нет связи</span></div>
-  </div>
-
-  <script src="./app.js"></script>
+    <script src="./app.js"></script>
 </body>
+
 </html>
