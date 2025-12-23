@@ -136,6 +136,14 @@ const showStatus = (msg, isError = false) => {
     els.statusPill.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${isError ? 'text-red-500 bg-red-500/10' : 'text-green-500 bg-green-500/10'}`;
 };
 
+// Helper for Date Display
+function updateDateDisplay() {
+    if (!els.dateInput.value) return;
+    const [y, m, d] = els.dateInput.value.split('-');
+    els.dateDisplay.textContent = `${d}.${m}.${y}`;
+    state.date = els.dateInput.value;
+}
+
 /****************
  * INIT logic
  ****************/
@@ -143,7 +151,7 @@ function initApp() {
     // 1. Setup default UI immediately (Non-blocking)
     els.dateInput.value = new Date().toISOString().slice(0, 10);
     updateDateDisplay();
-    updateTheme(); // Ensures correct colors
+    updateTheme();
 
     // 2. Resolve User ID
     if (window.Telegram?.WebApp) {
@@ -162,7 +170,6 @@ function initApp() {
     // 3. Background Load
     if (state.userId) {
         showStatus("Загрузка...", false);
-        // Start background process
         loadHistory();
     } else {
         showStatus("Не подключен", true);
@@ -170,6 +177,56 @@ function initApp() {
         renderHistoryError("Не подключен. Откройте через Telegram.");
     }
 }
+
+// ... loadHistory ...
+
+/****************
+ * THEME & FORM LOGIC
+ ****************/
+const updateTheme = () => {
+    const t = state.type;
+    const idx = ['in', 'out', 'fx'].indexOf(t);
+    els.typeGlider.style.transform = `translateX(${idx * 100}%)`;
+
+    ['in', 'out', 'fx'].forEach(k => {
+        const lbl = els.typeLabels[k];
+        if (k === t) {
+            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-white font-semibold";
+        } else {
+            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-hint hover:text-tg-text";
+        }
+    });
+
+    // Colors
+    const setColors = (cls, bgCls) => {
+        // Glider
+        els.typeGlider.className = `absolute top-1 bottom-1 w-1/3 rounded-xl shadow-sm transition-all duration-300 ease-out ${bgCls}`;
+
+        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
+        els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${bgCls}`;
+        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
+    };
+
+    if (t === 'in') {
+        els.amountSign.textContent = "+";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-green-500";
+        els.amountLabel.textContent = "Сумма";
+        els.fxBlock.classList.add("hidden");
+        setColors('text-green-500', 'bg-green-500');
+    } else if (t === 'out') {
+        els.amountSign.textContent = "-";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
+        els.amountLabel.textContent = "Сумма";
+        els.fxBlock.classList.add("hidden");
+        setColors('text-red-500', 'bg-red-500');
+    } else { // fx
+        els.amountSign.textContent = "-";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-blue-500";
+        els.amountLabel.textContent = "Сумма (Отдаю)";
+        els.fxBlock.classList.remove("hidden");
+        setColors('text-blue-500', 'bg-blue-500');
+    }
+};
 
 async function loadHistory() {
     state.loading = true;
@@ -204,47 +261,7 @@ function renderHistoryError(msg) {
 /****************
  * THEME & FORM LOGIC
  ****************/
-const updateTheme = () => {
-    const t = state.type;
-    const idx = ['in', 'out', 'fx'].indexOf(t);
-    els.typeGlider.style.transform = `translateX(${idx * 100}%)`;
-
-    ['in', 'out', 'fx'].forEach(k => {
-        const lbl = els.typeLabels[k];
-        if (k === t) {
-            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-text font-semibold";
-        } else {
-            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-hint hover:text-tg-text";
-        }
-    });
-
-    // Colors
-    const setColors = (cls) => {
-        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
-        els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${cls.replace('text-', 'bg-')}`;
-        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
-    };
-
-    if (t === 'in') {
-        els.amountSign.textContent = "+";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-green-500";
-        els.amountLabel.textContent = "Сумма";
-        els.fxBlock.classList.add("hidden");
-        setColors('text-green-500');
-    } else if (t === 'out') {
-        els.amountSign.textContent = "-";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
-        els.amountLabel.textContent = "Сумма";
-        els.fxBlock.classList.add("hidden");
-        setColors('text-red-500');
-    } else { // fx
-        els.amountSign.textContent = "-";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-blue-500";
-        els.amountLabel.textContent = "Сумма (Отдаю)";
-        els.fxBlock.classList.remove("hidden");
-        setColors('text-blue-500');
-    }
-};
+// Duplicate updateTheme removed
 
 const checkFxCurrencyLogic = () => {
     if (els.currencyInput.value !== 'UZS') {
