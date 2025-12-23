@@ -4,7 +4,7 @@
  ***********************/
 
 // UPDATED URL
-const API_URL = "https://script.google.com/macros/s/AKfycbyRDXjJRtVo_PVWdd7aGaT-vQFEgBWmboQ6vneFabMlSItkf-n7oshojfj82TpMS6wU/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
 
 // STATE
 const state = {
@@ -207,10 +207,11 @@ const updateTheme = () => {
 
     // Colors
     const setColors = (cls, bgCls) => {
-        // Glider
-        els.typeGlider.className = `absolute top-1 bottom-1 w-1/3 rounded-xl shadow-sm transition-all duration-300 ease-out ${bgCls}`;
+        // Glider - use exact width matching the labels (inner width minus padding / 3)
+        els.typeGlider.className = `absolute top-1 bottom-1 w-[calc((100%-8px)/3)] rounded-lg shadow-sm transition-all duration-300 ease-out ${bgCls}`;
 
         els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
+        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] ${cls}`;
         els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${bgCls}`;
         els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
     };
@@ -519,4 +520,3 @@ function formatCurrency(val, cur) {
 
 // Init
 initApp();
-
