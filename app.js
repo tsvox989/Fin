@@ -199,8 +199,8 @@ function showSuggestions(inputEl, containerEl, field) {
     matches.slice(0, 5).forEach(text => {
         const btn = document.createElement('button');
         btn.type = "button";
-        btn.className = "px-3 py-1 bg-blue-500 rounded-full text-[12px] text-white whitespace-nowrap active:scale-95 transition-all shadow-md font-medium";
-        btn.innerHTML = `${text} <span class="opacity-70 ml-1 text-[10px]">x${freqMap[text]}</span>`;
+        btn.className = "px-2 py-0.5 bg-blue-500 rounded-full text-[10px] text-white whitespace-nowrap active:scale-95 transition-all shadow-sm font-medium";
+        btn.innerHTML = `${text} <span class="opacity-70 text-[9px] ml-0.5">${freqMap[text]}</span>`;
         btn.onclick = () => {
             inputEl.value = text;
             containerEl.innerHTML = "";

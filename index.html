@@ -20,6 +20,15 @@
             text-align: center;
             text-align-last: center;
         }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 
     <script>
@@ -156,21 +165,27 @@
 
                 <!-- Counterparty -->
                 <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[14px] text-tg-hint pl-1">Контрагент</label>
+                        <div id="counterpartySuggestions"
+                            class="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-[70%]"></div>
+                    </div>
                     <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
                         type="text" />
-                    <div id="counterpartySuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>
                     <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
                         Необходимо заполнить</div>
                 </div>
 
                 <!-- Comment -->
                 <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[14px] text-tg-hint pl-1">Комментарий</label>
+                        <div id="commentSuggestions"
+                            class="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-[70%]"></div>
+                    </div>
                     <textarea id="commentInput" placeholder="Детали операции..." rows="2"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
-                    <div id="commentSuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>
                     <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
                         заполнить</div>
                 </div>
