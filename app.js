@@ -60,6 +60,7 @@ const els = {
     statusPill: document.getElementById("statusPill"),
     counterpartySuggestions: document.getElementById("counterpartySuggestions"),
     commentSuggestions: document.getElementById("commentSuggestions"),
+    textMeasure: document.getElementById("textMeasure"),
     amountError: document.getElementById("amountError"),
     dateError: document.getElementById("dateError"),
     counterpartyError: document.getElementById("counterpartyError"),
@@ -186,22 +187,34 @@ function getFrequencyMap(field) {
 }
 
 function showSuggestions(inputEl, containerEl, field) {
-    const query = inputEl.value.trim().toLowerCase();
+    const val = inputEl.value;
+    const query = val.trim().toLowerCase();
     containerEl.innerHTML = "";
 
     if (query.length < 2) return;
+
+    // MEASURE POSITION
+    els.textMeasure.textContent = val;
+    const textWidth = els.textMeasure.offsetWidth;
+    // Cap movement so suggestions don't fly off screen
+    const maxMove = inputEl.offsetWidth - 80;
+    const moveX = Math.min(textWidth + 12, maxMove);
+
+    containerEl.style.left = `${moveX}px`;
 
     const freqMap = getFrequencyMap(field);
     const matches = Object.keys(freqMap)
         .filter(key => key.toLowerCase().includes(query) && freqMap[key] >= 2)
         .sort((a, b) => freqMap[b] - freqMap[a]);
 
-    matches.slice(0, 5).forEach(text => {
+    matches.slice(0, 3).forEach(text => {
         const btn = document.createElement('button');
         btn.type = "button";
-        btn.className = "px-2 py-0.5 bg-blue-500 rounded-full text-[10px] text-white whitespace-nowrap active:scale-95 transition-all shadow-sm font-medium";
+        btn.className = "px-2 py-0.5 bg-blue-500 rounded-full text-[10px] text-white whitespace-nowrap active:scale-95 transition-all shadow-sm font-medium pointer-events-auto";
         btn.innerHTML = `${text} <span class="opacity-70 text-[9px] ml-0.5">${freqMap[text]}</span>`;
-        btn.onclick = () => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             inputEl.value = text;
             containerEl.innerHTML = "";
             validateForm();

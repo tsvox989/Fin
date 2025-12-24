@@ -165,27 +165,30 @@
 
                 <!-- Counterparty -->
                 <div class="relative">
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="text-[14px] text-tg-hint pl-1">Контрагент</label>
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент</label>
+                    <div class="relative flex items-center">
+                        <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
+                            type="text" autocomplete="off" />
                         <div id="counterpartySuggestions"
-                            class="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-[70%]"></div>
+                            class="absolute pointer-events-none flex items-center gap-1.5 z-20 transition-all duration-150 py-1"
+                            style="left: 12px;"></div>
                     </div>
-                    <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
-                        type="text" />
                     <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
                         Необходимо заполнить</div>
                 </div>
 
                 <!-- Comment -->
                 <div class="relative">
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="text-[14px] text-tg-hint pl-1">Комментарий</label>
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
+                    <div class="relative flex items-center">
+                        <textarea id="commentInput" placeholder="Детали операции..." rows="1"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"
+                            autocomplete="off"></textarea>
                         <div id="commentSuggestions"
-                            class="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-[70%]"></div>
+                            class="absolute pointer-events-none flex items-center gap-1.5 z-20 transition-all duration-150 py-1"
+                            style="left: 12px; top: 12px;"></div>
                     </div>
-                    <textarea id="commentInput" placeholder="Детали операции..." rows="2"
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
                     <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
                         заполнить</div>
                 </div>
@@ -244,6 +247,10 @@
 
     <!-- Empty Footer -->
     <footer class="h-4"></footer>
+
+    <!-- Measuring helper (Hidden) -->
+    <span id="textMeasure" class="absolute invisible whitespace-pre pointer-events-none"
+        style="font-size: 16px; font-family: inherit;"></span>
 
     <!-- TOAST (Optional extra from previous, but maybe not needed if pill is enough. Keeping logic in JS just in case) -->
 
