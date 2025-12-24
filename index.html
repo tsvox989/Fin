@@ -15,6 +15,11 @@
         html {
             font-family: 'Google Sans Text', 'Google Sans', sans-serif;
         }
+
+        select {
+            text-align: center;
+            text-align-last: center;
+        }
     </style>
 
     <script>
@@ -151,8 +156,8 @@
 
                 <!-- Counterparty -->
                 <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент *</label>
-                    <input id="counterpartyInput" required placeholder="Магазин, такси..."
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент</label>
+                    <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
                         type="text" />
                     <div id="counterpartySuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>
@@ -162,7 +167,7 @@
 
                 <!-- Comment -->
                 <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий *</label>
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
                     <textarea id="commentInput" placeholder="Детали операции..." rows="2"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
                     <div id="commentSuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>

@@ -199,8 +199,8 @@ function showSuggestions(inputEl, containerEl, field) {
     matches.slice(0, 5).forEach(text => {
         const btn = document.createElement('button');
         btn.type = "button";
-        btn.className = "px-3 py-1 bg-tg-secondaryBg border border-black/10 rounded-full text-[12px] text-tg-text whitespace-nowrap active:scale-90 transition-transform shadow-sm";
-        btn.innerHTML = `${text} <span class="opacity-40 ml-1">x${freqMap[text]}</span>`;
+        btn.className = "px-3 py-1 bg-blue-500 rounded-full text-[12px] text-white whitespace-nowrap active:scale-95 transition-all shadow-md font-medium";
+        btn.innerHTML = `${text} <span class="opacity-70 ml-1 text-[10px]">x${freqMap[text]}</span>`;
         btn.onclick = () => {
             inputEl.value = text;
             containerEl.innerHTML = "";
@@ -291,8 +291,8 @@ const updateTheme = () => {
         setColors('text-red-500', 'bg-red-500');
     } else { // fx
         els.amountSign.textContent = "-";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-blue-500";
-        els.amountLabel.textContent = "Сумма (Отдаю)";
+        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
+        els.amountLabel.textContent = "Сумма (Отдал)";
         els.fxBlock.classList.remove("hidden");
         setColors('text-blue-500', 'bg-blue-500');
     }
@@ -366,7 +366,7 @@ const calculateFx = () => {
     } else {
         res = amt * rate;
     }
-    els.fxTotalDisplay.textContent = `Итого: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${els.fxCurrencyInput.value}`;
+    els.fxTotalDisplay.textContent = `Итого получил: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${els.fxCurrencyInput.value}`;
 };
 
 // Events
