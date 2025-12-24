@@ -294,7 +294,8 @@ const updateTheme = () => {
         els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
         els.amountLabel.textContent = "Сумма (Отдал)";
         els.fxBlock.classList.remove("hidden");
-        setColors('text-blue-500', 'bg-blue-500');
+        // Digits are RED (Giving money), but Button/Theme remains BLUE (Exchange action)
+        setColors('text-red-500', 'bg-blue-500');
     }
     validateForm();
 };
@@ -355,7 +356,7 @@ const calculateFx = () => {
     const amt = parseNumber(state.amount);
     const rate = parseNumber(state.fxRate);
     if (!amt || !rate) {
-        els.fxTotalDisplay.textContent = `Итого: + 0,00 ${els.fxCurrencyInput.value}`;
+        els.fxTotalDisplay.textContent = `Итого получил: + 0,00 ${els.fxCurrencyInput.value}`;
         return;
     }
     let res = 0;
