@@ -196,27 +196,38 @@ function showSuggestions(inputEl, containerEl, field) {
     // MEASURE POSITION
     els.textMeasure.textContent = val;
     const textWidth = els.textMeasure.offsetWidth;
-    // Cap movement so suggestions don't fly off screen
-    const maxMove = inputEl.offsetWidth - 80;
+
+    // Constraint: Max allowable left position so list doesn't overflow right
+    // Width of a chip is roughly 100-150px.
+    const containerWidth = 140;
+    const maxMove = inputEl.offsetWidth - containerWidth;
     const moveX = Math.min(textWidth + 12, maxMove);
 
     containerEl.style.left = `${moveX}px`;
+    // If it's a textarea, suggestions appear below the current text line
+    if (inputEl.tagName === 'TEXTAREA') {
+        containerEl.style.top = `${inputEl.offsetHeight}px`;
+    }
 
     const freqMap = getFrequencyMap(field);
     const matches = Object.keys(freqMap)
         .filter(key => key.toLowerCase().includes(query) && freqMap[key] >= 2)
         .sort((a, b) => freqMap[b] - freqMap[a]);
 
-    matches.slice(0, 3).forEach(text => {
+    matches.slice(0, 4).forEach(text => {
         const btn = document.createElement('button');
         btn.type = "button";
-        btn.className = "px-2 py-0.5 bg-blue-500 rounded-full text-[10px] text-white whitespace-nowrap active:scale-95 transition-all shadow-sm font-medium pointer-events-auto";
-        btn.innerHTML = `${text} <span class="opacity-70 text-[9px] ml-0.5">${freqMap[text]}</span>`;
+        btn.className = "px-3 py-1.5 bg-blue-500 rounded-lg text-[11px] text-white whitespace-nowrap active:scale-95 transition-all shadow-md font-medium pointer-events-auto text-left w-full border border-white/10";
+        btn.innerHTML = `${text} <span class="opacity-60 text-[9px] float-right ml-2">${freqMap[text]}</span>`;
         btn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
             inputEl.value = text;
             containerEl.innerHTML = "";
+            if (inputEl.tagName === 'TEXTAREA') {
+                inputEl.style.height = 'auto';
+                inputEl.style.height = inputEl.scrollHeight + 'px';
+            }
             validateForm();
         };
         containerEl.appendChild(btn);
@@ -399,8 +410,12 @@ els.counterpartyInput.addEventListener('input', () => {
     showSuggestions(els.counterpartyInput, els.counterpartySuggestions, 'desc');
 });
 els.commentInput.addEventListener('input', () => {
+    // Auto-expand logic
+    els.commentInput.style.height = 'auto';
+    els.commentInput.style.height = els.commentInput.scrollHeight + 'px';
+
+    showSuggestions(els.commentInput, els.commentSuggestions, 'comm');
     validateForm();
-    showSuggestions(els.commentInput, els.commentSuggestions, 'comment');
 });
 
 els.photoInput.addEventListener('change', async (e) => {

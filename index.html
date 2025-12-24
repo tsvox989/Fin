@@ -16,9 +16,10 @@
             font-family: 'Google Sans Text', 'Google Sans', sans-serif;
         }
 
-        select {
-            text-align: center;
-            text-align-last: center;
+        body {
+            max-width: 100vw;
+            overflow-x: hidden;
+            position: relative;
         }
 
         .no-scrollbar::-webkit-scrollbar {
@@ -28,6 +29,12 @@
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+
+        /* Auto-expanding textarea hack to remove default scroll */
+        textarea {
+            overflow: hidden;
+            min-height: 48px;
         }
     </style>
 
@@ -171,8 +178,8 @@
                             class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
                             type="text" autocomplete="off" />
                         <div id="counterpartySuggestions"
-                            class="absolute pointer-events-none flex items-center gap-1.5 z-20 transition-all duration-150 py-1"
-                            style="left: 12px;"></div>
+                            class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
+                            style="left: 12px; top: 100%;"></div>
                     </div>
                     <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
                         Необходимо заполнить</div>
@@ -186,8 +193,8 @@
                             class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"
                             autocomplete="off"></textarea>
                         <div id="commentSuggestions"
-                            class="absolute pointer-events-none flex items-center gap-1.5 z-20 transition-all duration-150 py-1"
-                            style="left: 12px; top: 12px;"></div>
+                            class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
+                            style="left: 12px; top: 100%;"></div>
                     </div>
                     <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
                         заполнить</div>
