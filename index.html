@@ -44,16 +44,8 @@
     <link rel="stylesheet" href="./app.css" />
 </head>
 
-<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col relative pb-24">
-    <!-- TOP BAR / STATUS -->
-    <header class="fixed top-0 right-0 p-4 z-50 pointer-events-none">
-        <div id="statusPill"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all shadow-sm border border-black/10 text-tg-hint bg-tg-secondaryBg pointer-events-auto">
-            <span>...</span>
-        </div>
-    </header>
-
-    <main class="container mx-auto max-w-md p-4 space-y-8 flex-grow">
+<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col relative pb-40">
+    <main class="container mx-auto max-w-md p-4 space-y-6 flex-grow">
         <!-- FORM SECTION -->
         <section>
             <form id="txnForm" class="flex flex-col gap-5">
@@ -163,6 +155,7 @@
                     <input id="counterpartyInput" required placeholder="Магазин, такси..."
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
                         type="text" />
+                    <div id="counterpartySuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>
                     <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
                         Необходимо заполнить</div>
                 </div>
@@ -172,6 +165,7 @@
                     <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий *</label>
                     <textarea id="commentInput" placeholder="Детали операции..." rows="2"
                         class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
+                    <div id="commentSuggestions" class="flex flex-wrap gap-2 mt-2 px-1"></div>
                     <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
                         заполнить</div>
                 </div>
@@ -186,7 +180,7 @@
                                 d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
                             <circle cx="12" cy="13" r="3" />
                         </svg>
-                        <span class="text-[14px]">Добавить фото (до 5 шт, макс 25МБ)</span>
+                        <span class="text-[14px]">Добавить фото (до 6 шт, макс 24МБ)</span>
                         <input id="photoInput" accept="image/*" class="hidden" type="file" multiple />
                     </label>
 
@@ -208,6 +202,14 @@
                 </div>
             </form>
         </section>
+
+        <!-- STATUS BAR -->
+        <div class="flex justify-center py-2">
+            <div id="statusPill"
+                class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold transition-all border border-black/10 text-tg-hint bg-tg-secondaryBg shadow-sm">
+                <span>...</span>
+            </div>
+        </div>
 
         <!-- HISTORY SECTION -->
         <section class="pb-4">

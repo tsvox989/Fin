@@ -58,6 +58,8 @@ const els = {
     historyCount: document.getElementById("historyCount"),
     historyList: document.getElementById("historyList"),
     statusPill: document.getElementById("statusPill"),
+    counterpartySuggestions: document.getElementById("counterpartySuggestions"),
+    commentSuggestions: document.getElementById("commentSuggestions"),
     amountError: document.getElementById("amountError"),
     dateError: document.getElementById("dateError"),
     counterpartyError: document.getElementById("counterpartyError"),
@@ -165,6 +167,47 @@ function validateForm() {
         els.saveBtnText.textContent = "Заполните все поля";
         // els.saveBtn.classList.add('opacity-50');
     }
+}
+
+function getFrequencyMap(field) {
+    const map = {};
+    if (!state.history) return map;
+
+    state.history.forEach(item => {
+        // Source data comes from getTransactions_ in core.gs
+        // desc mapping to cnt (item.desc), comment mapping to comm (item.comment)
+        const val = field === 'desc' ? item.desc : item.comment;
+        if (!val || typeof val !== 'string') return;
+        const normalized = val.trim();
+        if (!normalized) return;
+        map[normalized] = (map[normalized] || 0) + 1;
+    });
+    return map;
+}
+
+function showSuggestions(inputEl, containerEl, field) {
+    const query = inputEl.value.trim().toLowerCase();
+    containerEl.innerHTML = "";
+
+    if (query.length < 2) return;
+
+    const freqMap = getFrequencyMap(field);
+    const matches = Object.keys(freqMap)
+        .filter(key => key.toLowerCase().includes(query) && freqMap[key] >= 2)
+        .sort((a, b) => freqMap[b] - freqMap[a]);
+
+    matches.slice(0, 5).forEach(text => {
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.className = "px-3 py-1 bg-tg-secondaryBg border border-black/10 rounded-full text-[12px] text-tg-text whitespace-nowrap active:scale-90 transition-transform shadow-sm";
+        btn.innerHTML = `${text} <span class="opacity-40 ml-1">x${freqMap[text]}</span>`;
+        btn.onclick = () => {
+            inputEl.value = text;
+            containerEl.innerHTML = "";
+            validateForm();
+        };
+        containerEl.appendChild(btn);
+    });
 }
 
 /****************
@@ -337,23 +380,29 @@ els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) 
 els.currencyInput.addEventListener('change', () => { state.currency = els.currencyInput.value; checkFxCurrencyLogic(); validateForm(); });
 els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.fxRate = val; calculateFx(); validateForm(); }));
 els.fxCurrencyInput.addEventListener('change', () => { state.fxCurrency = els.fxCurrencyInput.value; calculateFx(); validateForm(); });
-els.counterpartyInput.addEventListener('input', () => validateForm());
-els.commentInput.addEventListener('input', () => validateForm());
+els.counterpartyInput.addEventListener('input', () => {
+    validateForm();
+    showSuggestions(els.counterpartyInput, els.counterpartySuggestions, 'desc');
+});
+els.commentInput.addEventListener('input', () => {
+    validateForm();
+    showSuggestions(els.commentInput, els.commentSuggestions, 'comment');
+});
 
 els.photoInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    if (state.photos.length + files.length > 5) {
-        showStatus("Максимум 5 фото", true);
+    if (state.photos.length + files.length > 6) {
+        showStatus("Максимум 6 фото", true);
         return;
     }
 
     let currentTotalSize = state.photos.reduce((sum, p) => sum + p.file.size, 0);
     const incomingSize = files.reduce((sum, f) => sum + f.size, 0);
 
-    if ((currentTotalSize + incomingSize) > 25 * 1024 * 1024) {
-        showStatus("Лимит 25МБ превышен", true);
+    if ((currentTotalSize + incomingSize) > 24 * 1024 * 1024) {
+        showStatus("Лимит 24МБ превышен", true);
         return;
     }
 
@@ -387,7 +436,7 @@ function renderPhotos() {
         els.photoList.appendChild(div);
     });
 
-    if (state.photos.length >= 5) {
+    if (state.photos.length >= 6) {
         els.photoLabel.classList.add('hidden');
     } else {
         els.photoLabel.classList.remove('hidden');
