@@ -211,10 +211,10 @@ const updateTheme = () => {
         // Glider - use exact width matching the labels (inner width minus padding / 3)
         els.typeGlider.className = `absolute top-1 bottom-1 w-[calc((100%-8px)/3)] rounded-lg shadow-sm transition-all duration-300 ease-out ${bgCls}`;
 
-        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
-        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] ${cls}`;
+        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
+        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] ${cls}`;
         els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${bgCls}`;
-        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-black/10 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
+        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-[hsla(0,0%,50%,0.1)] cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
     };
 
     if (t === 'in') {
