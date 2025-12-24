@@ -4,7 +4,7 @@
  ***********************/
 
 // UPDATED URL
-const API_URL = "https://script.google.com/macros/s/AKfycbxfPN5n9Tc38uS9GnQxFh5LMYpmNfEYMHs0VzfHtc28iteEcLZIFnbNtHGrU4Byen5G/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxjVGERFEhHHe6gTCoq8VgbCJJar2zwdvPUJ6I78ANBwvdEkWP6qsHf3x_jE10TErCY/exec";
 
 // STATE
 const state = {
@@ -61,6 +61,7 @@ const els = {
     historyList: document.getElementById("historyList"),
     statusPill: document.getElementById("statusPill"),
     amountError: document.getElementById("amountError"),
+    dateError: document.getElementById("dateError"),
     counterpartyError: document.getElementById("counterpartyError"),
     commentError: document.getElementById("commentError"),
 };
@@ -210,10 +211,10 @@ const updateTheme = () => {
         // Glider - use exact width matching the labels (inner width minus padding / 3)
         els.typeGlider.className = `absolute top-1 bottom-1 w-[calc((100%-8px)/3)] rounded-lg shadow-sm transition-all duration-300 ease-out ${bgCls}`;
 
-        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
-        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] ${cls}`;
+        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
+        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] ${cls}`;
         els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${bgCls}`;
-        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
+        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-black/10 cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
     };
 
     if (t === 'in') {
@@ -344,11 +345,6 @@ els.photoRemoveBtn.addEventListener('click', () => {
 els.saveBtn.addEventListener('click', async () => {
     if (!state.userId) return;
 
-    // Reset Errors
-    els.amountError.classList.add('hidden');
-    els.counterpartyError.classList.add('hidden');
-    els.commentError.classList.add('hidden');
-
     // Check Access
     if (state.access === false) {
         showStatus("Нет доступа к сохранению", true);
@@ -360,17 +356,32 @@ els.saveBtn.addEventListener('click', async () => {
     }
 
     let hasError = false;
+    if (!state.date) {
+        els.dateError.classList.remove('hidden');
+        hasError = true;
+    } else {
+        els.dateError.classList.add('hidden');
+    }
+
     if (!state.amount || parseNumber(state.amount) === 0) {
         els.amountError.classList.remove('hidden');
         hasError = true;
+    } else {
+        els.amountError.classList.add('hidden');
     }
+
     if (!els.counterpartyInput.value.trim()) {
         els.counterpartyError.classList.remove('hidden');
         hasError = true;
+    } else {
+        els.counterpartyError.classList.add('hidden');
     }
+
     if (!els.commentInput.value.trim()) {
         els.commentError.classList.remove('hidden');
         hasError = true;
+    } else {
+        els.commentError.classList.add('hidden');
     }
 
     if (hasError) return;
@@ -378,13 +389,14 @@ els.saveBtn.addEventListener('click', async () => {
     // 1. Prepare Payload
     const [y, m, d] = state.date.split('-');
     const dateFormatted = `${d}.${m}.${y}`;
+    const sign = (state.type === 'out' || state.type === 'fx') ? '-' : '';
     const payload = {
         action: "save_transaction",
         user_id: state.userId,
         type: state.type,
         date: dateFormatted,
         currency: els.currencyInput.value,
-        amount_raw: state.amount.replace(/\s/g, ''),
+        amount_raw: sign + state.amount.replace(/\s/g, ''),
         counterparty: els.counterpartyInput.value.trim(),
         comment: els.commentInput.value.trim()
     };
@@ -515,9 +527,9 @@ function renderHistory() {
 }
 
 function formatCurrency(val, cur) {
-    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val) + " " + cur;
+    // Show positive value in UI as the sign is handled by the icon/color
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Math.abs(val)) + " " + cur;
 }
 
 // Init
 initApp();
-

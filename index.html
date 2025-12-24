@@ -59,7 +59,7 @@
                         <div class="relative h-[52px]">
                             <!-- Visual Date (DD.MM.YYYY) -->
                             <div
-                                class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
+                                class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
                                 <span id="dateDisplay" class="truncate w-full">--.--.----</span>
                             </div>
                             <!-- Actual Input -->
@@ -67,12 +67,14 @@
                                 class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
                                 required type="date" />
                         </div>
+                        <div id="dateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Обязательно
+                        </div>
                     </div>
 
                     <!-- Type -->
                     <div class="w-3/4 min-w-0">
                         <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
-                        <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden"
+                        <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden border border-black/10"
                             id="typeSeg">
                             <!-- Glider background -->
                             <div id="typeGlider"
@@ -107,7 +109,7 @@
                         </div>
                         <div class="w-1/4">
                             <select id="currencyInput"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
                                 <option value="UZS">UZS</option>
                                 <option value="USD">USD</option>
                                 <option value="EUR">EUR</option>
@@ -133,7 +135,7 @@
                             </div>
                             <div class="w-1/4">
                                 <select id="fxCurrencyInput"
-                                    class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
+                                    class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
                                     <option value="USD">USD</option>
                                     <option value="EUR">EUR</option>
                                     <option value="RUB">RUB</option>
@@ -152,7 +154,7 @@
                 <div class="relative">
                     <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент *</label>
                     <input id="counterpartyInput" required placeholder="Магазин, такси..."
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
+                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] text-tg-text"
                         type="text" />
                     <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
                         Необходимо заполнить</div>
@@ -162,7 +164,7 @@
                 <div class="relative">
                     <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий *</label>
                     <textarea id="commentInput" placeholder="Детали операции..." rows="2"
-                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
+                        class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-black/10 focus:outline-none transition-colors text-[16px] text-tg-text resize-none"></textarea>
                     <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
                         заполнить</div>
                 </div>
@@ -187,8 +189,9 @@
                         class="hidden relative rounded-xl overflow-hidden h-32 w-full border border-tg-hint/20 group">
                         <img id="photoPreviewImg" class="w-full h-full object-cover" />
                         <div
-                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <button type="button" id="photoRemoveBtn" class="bg-red-500 text-white p-2 rounded-full">
+                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-30">
+                            <button type="button" id="photoRemoveBtn"
+                                class="bg-red-500 text-white p-2 rounded-full active:scale-90 transition-transform">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round">
