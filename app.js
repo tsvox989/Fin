@@ -21,7 +21,7 @@ const state = {
     fxRate: "",
     fxCurrency: "USD",
     comment: "",
-    photo: null,
+    photos: [], // Array of { file, base64, name }
 
     history: [],
     loading: false
@@ -52,9 +52,7 @@ const els = {
     commentInput: document.getElementById("commentInput"),
     photoLabel: document.getElementById("photoLabel"),
     photoInput: document.getElementById("photoInput"),
-    photoPreviewWrap: document.getElementById("photoPreviewWrap"),
-    photoPreviewImg: document.getElementById("photoPreviewImg"),
-    photoRemoveBtn: document.getElementById("photoRemoveBtn"),
+    photoList: document.getElementById("photoList"),
     saveBtn: document.getElementById("saveBtn"),
     saveBtnText: document.getElementById("saveBtnText"),
     historyCount: document.getElementById("historyCount"),
@@ -148,6 +146,25 @@ function updateDateDisplay() {
     const [y, m, d] = els.dateInput.value.split('-');
     els.dateDisplay.textContent = `${d}.${m}.${y}`;
     state.date = els.dateInput.value;
+    validateForm();
+}
+
+function validateForm() {
+    let isValid = true;
+    if (!state.date) isValid = false;
+    if (!state.amount || parseNumber(state.amount) === 0) isValid = false;
+    if (!els.counterpartyInput.value.trim()) isValid = false;
+    if (!els.commentInput.value.trim()) isValid = false;
+
+    if (els.saveBtn.disabled && els.saveBtnText.textContent.includes("...")) return;
+
+    if (isValid) {
+        els.saveBtnText.textContent = "Сохранить";
+        els.saveBtn.classList.remove('opacity-50');
+    } else {
+        els.saveBtnText.textContent = "Заполните все поля";
+        // els.saveBtn.classList.add('opacity-50');
+    }
 }
 
 /****************
@@ -236,6 +253,7 @@ const updateTheme = () => {
         els.fxBlock.classList.remove("hidden");
         setColors('text-blue-500', 'bg-blue-500');
     }
+    validateForm();
 };
 
 async function loadHistory() {
@@ -305,7 +323,7 @@ const calculateFx = () => {
     } else {
         res = amt * rate;
     }
-    els.fxTotalDisplay.textContent = `Итого: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(res)} ${els.fxCurrencyInput.value}`;
+    els.fxTotalDisplay.textContent = `Итого: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${els.fxCurrencyInput.value}`;
 };
 
 // Events
@@ -314,30 +332,72 @@ els.dateInput.addEventListener('change', () => {
     els.dateDisplay.textContent = `${d}.${m}.${y}`;
     state.date = els.dateInput.value;
 });
-els.typeInputs.forEach(inp => inp.addEventListener('change', () => { state.type = inp.value; updateTheme(); calculateFx(); }));
-els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.amount = val; calculateFx(); }));
-els.currencyInput.addEventListener('change', () => { state.currency = els.currencyInput.value; checkFxCurrencyLogic(); });
-els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.fxRate = val; calculateFx(); }));
-els.fxCurrencyInput.addEventListener('change', () => { state.fxCurrency = els.fxCurrencyInput.value; calculateFx(); });
-els.photoInput.addEventListener('change', (e) => {
-    const f = e.target.files?.[0];
-    if (f) {
-        state.photo = f;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            els.photoPreviewImg.src = ev.target.result;
-            els.photoPreviewWrap.classList.remove('hidden');
-            els.photoLabel.classList.add('hidden');
-        };
-        reader.readAsDataURL(f);
+els.typeInputs.forEach(inp => inp.addEventListener('change', () => { state.type = inp.value; updateTheme(); calculateFx(); validateForm(); }));
+els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.amount = val; calculateFx(); validateForm(); }));
+els.currencyInput.addEventListener('change', () => { state.currency = els.currencyInput.value; checkFxCurrencyLogic(); validateForm(); });
+els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.fxRate = val; calculateFx(); validateForm(); }));
+els.fxCurrencyInput.addEventListener('change', () => { state.fxCurrency = els.fxCurrencyInput.value; calculateFx(); validateForm(); });
+els.counterpartyInput.addEventListener('input', () => validateForm());
+els.commentInput.addEventListener('input', () => validateForm());
+
+els.photoInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (state.photos.length + files.length > 5) {
+        showStatus("Максимум 5 фото", true);
+        return;
     }
+
+    let currentTotalSize = state.photos.reduce((sum, p) => sum + p.file.size, 0);
+    const incomingSize = files.reduce((sum, f) => sum + f.size, 0);
+
+    if ((currentTotalSize + incomingSize) > 25 * 1024 * 1024) {
+        showStatus("Лимит 25МБ превышен", true);
+        return;
+    }
+
+    for (const f of files) {
+        try {
+            const base64Full = await fileToBase64(f);
+            state.photos.push({
+                file: f,
+                name: f.name,
+                base64: base64Full.split(',')[1],
+                preview: base64Full
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    els.photoInput.value = ""; // Clear for next selection
+    renderPhotos();
 });
-els.photoRemoveBtn.addEventListener('click', () => {
-    state.photo = null;
-    els.photoInput.value = "";
-    els.photoPreviewWrap.classList.add('hidden');
-    els.photoLabel.classList.remove('hidden');
-});
+
+function renderPhotos() {
+    els.photoList.innerHTML = "";
+    state.photos.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = "relative aspect-square rounded-xl overflow-hidden border border-black/10 group";
+        div.innerHTML = `
+            <img src="${p.preview}" class="w-full h-full object-cover" />
+            <button type="button" class="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-lg backdrop-blur-sm active:scale-90 transition-transform z-10" onclick="removePhoto(${idx})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        `;
+        els.photoList.appendChild(div);
+    });
+
+    if (state.photos.length >= 5) {
+        els.photoLabel.classList.add('hidden');
+    } else {
+        els.photoLabel.classList.remove('hidden');
+    }
+}
+
+window.removePhoto = (idx) => {
+    state.photos.splice(idx, 1);
+    renderPhotos();
+};
 
 /****************
  * SAVE (Optimistic)
@@ -404,14 +464,12 @@ els.saveBtn.addEventListener('click', async () => {
         payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
         payload.fx_currency = els.fxCurrencyInput.value;
     }
-    let photoBase64 = null;
-    if (state.photo) {
-        try {
-            const base64Full = await fileToBase64(state.photo);
-            photoBase64 = base64Full.split(',')[1];
-            payload.photo_base64 = photoBase64;
-            payload.photo_filename = state.photo.name;
-        } catch (e) { console.error(e); }
+
+    if (state.photos.length > 0) {
+        payload.photos = state.photos.map(p => ({
+            base64: p.base64,
+            filename: p.name
+        }));
     }
 
     // 2. OPTIMISTIC UI
@@ -436,8 +494,8 @@ els.saveBtn.addEventListener('click', async () => {
     els.fxRateInput.value = "";
     els.commentInput.value = "";
     els.counterpartyInput.value = "";
-    state.photo = null;
-    els.photoRemoveBtn.click();
+    state.photos = [];
+    renderPhotos();
 
     els.saveBtnText.textContent = "Сохраняется...";
     els.saveBtn.disabled = true;
@@ -533,4 +591,3 @@ function formatCurrency(val, cur) {
 
 // Init
 initApp();
-

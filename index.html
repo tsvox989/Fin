@@ -44,7 +44,14 @@
     <link rel="stylesheet" href="./app.css" />
 </head>
 
-<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col">
+<body class="min-h-screen text-tg-text font-sans selection:bg-tg-link/20 flex flex-col relative pb-24">
+    <!-- TOP BAR / STATUS -->
+    <header class="fixed top-0 right-0 p-4 z-50 pointer-events-none">
+        <div id="statusPill"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all shadow-sm border border-black/10 text-tg-hint bg-tg-secondaryBg pointer-events-auto">
+            <span>...</span>
+        </div>
+    </header>
 
     <main class="container mx-auto max-w-md p-4 space-y-8 flex-grow">
         <!-- FORM SECTION -->
@@ -169,45 +176,36 @@
                         заполнить</div>
                 </div>
 
-                <!-- Photo -->
+                <!-- Photo Section -->
                 <div>
                     <label id="photoLabel"
-                        class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-tg-hint/30 cursor-pointer hover:border-[hsla(0,0%,50%,0.1)] transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text">
+                        class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-[hsla(0,0%,50%,0.1)] cursor-pointer hover:bg-tg-secondaryBg/50 transition-colors bg-tg-secondaryBg/30 text-tg-hint">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-camera">
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path
-                                d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z">
-                            </path>
-                            <circle cx="12" cy="13" r="3"></circle>
+                                d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                            <circle cx="12" cy="13" r="3" />
                         </svg>
-                        <span class="text-[14px]">Добавить фото</span>
-                        <input id="photoInput" accept="image/*" class="hidden" type="file" />
+                        <span class="text-[14px]">Добавить фото (до 5 шт, макс 25МБ)</span>
+                        <input id="photoInput" accept="image/*" class="hidden" type="file" multiple />
                     </label>
-                    <!-- Preview Container -->
-                    <div id="photoPreviewWrap"
-                        class="hidden relative rounded-xl overflow-hidden h-32 w-full border border-tg-hint/20 group">
-                        <img id="photoPreviewImg" class="w-full h-full object-cover" />
-                        <div
-                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-30">
-                            <button type="button" id="photoRemoveBtn"
-                                class="bg-red-500 text-white p-2 rounded-full active:scale-90 transition-transform">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M18 6 6 18" />
-                                    <path d="m6 6 12 12" />
-                                </svg>
-                            </button>
-                        </div>
+
+                    <!-- Multi-Preview Container -->
+                    <div id="photoList" class="grid grid-cols-3 gap-2 mt-3">
+                        <!-- Items will be injected here -->
                     </div>
                 </div>
 
-                <!-- Save Btn -->
-                <button type="button" id="saveBtn"
-                    class="w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 bg-blue-500 font-medium">
-                    <span id="saveBtnText">Сохранить</span>
-                </button>
+                <!-- Sticky Button Wrapper -->
+                <div
+                    class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-tg-bg via-tg-bg/95 to-transparent z-40">
+                    <div class="container mx-auto max-w-md">
+                        <button type="button" id="saveBtn"
+                            class="w-full py-3.5 rounded-xl text-[16px] text-white shadow-xl active:scale-95 transition-all bg-blue-500 font-bold border border-white/10">
+                            <span id="saveBtnText">Заполните данные</span>
+                        </button>
+                    </div>
+                </div>
             </form>
         </section>
 
@@ -222,14 +220,8 @@
         </section>
     </main>
 
-    <!-- FOOTER / STATUS -->
-    <footer
-        class="sticky bottom-0 w-full py-2 bg-gradient-to-t from-tg-bg to-transparent flex justify-center pb-4 backdrop-blur-[2px]">
-        <div id="statusPill"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors text-tg-hint bg-tg-secondaryBg">
-            <span>...</span>
-        </div>
-    </footer>
+    <!-- Empty Footer -->
+    <footer class="h-4"></footer>
 
     <!-- TOAST (Optional extra from previous, but maybe not needed if pill is enough. Keeping logic in JS just in case) -->
 
