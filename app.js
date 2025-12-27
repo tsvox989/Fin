@@ -892,8 +892,8 @@ function renderHistory() {
                     <span class="text-tg-text font-semibold shrink-0 ${iconColor}">${amountStr}</span>
                 </div>
                 <div class="flex justify-between items-center mt-0.5">
-                    <span class="text-[13px] text-tg-hint truncate w-[70%]">${row2}</span>
-                    <span class="text-[11px] text-tg-hint shrink-0">${item.temp ? "..." : dateStr}</span>
+                    <span class="text-[13px] text-tg-hint truncate w-[60%]">${row2}</span>
+                    <span class="text-[11px] text-tg-hint shrink-0 text-right w-[40%] truncate">${item.user ? item.user + " • " : ""}${item.temp ? "..." : dateStr}</span>
                 </div>
             </div>
         `;
