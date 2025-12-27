@@ -71,206 +71,187 @@
         <section>
             <form id="txnForm" class="flex flex-col gap-5">
 
-                <!-- Date + Type Row -->
-                <div class="flex gap-3">
-                    <!-- Date -->
-                    <div class="w-1/4 min-w-0">
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Дата</label>
-                        <div class="relative h-[52px]">
-                            <div
-                                class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
-                                <span id="dateDisplay" class="truncate w-full">--.--.----</span>
-                            </div>
-                            <input id="dateInput"
-                                class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
-                                required type="date" />
-                        </div>
-                        <div id="dateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Обязательно
-                        </div>
-                    </div>
-
-                    <!-- Type -->
-                    <div class="w-3/4 min-w-0">
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
-                        <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden border border-[hsla(0,0%,50%,0.1)]"
-                            id="typeSeg">
-                            <div id="typeGlider"
-                                class="absolute top-1 bottom-1 w-[calc((100%-8px)/3)] bg-white rounded-lg shadow-sm transition-all duration-200 ease-out left-1">
-                            </div>
-                            <input type="radio" name="txnType" id="typeIn" value="in" class="hidden" checked>
-                            <input type="radio" name="txnType" id="typeOut" value="out" class="hidden">
-                            <input type="radio" name="txnType" id="typeFx" value="fx" class="hidden">
-                            <label for="typeIn"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Получил</label>
-                            <label for="typeOut"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Отдал</label>
-                            <label for="typeFx"
-                                class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Обменял</label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Normal Mode: Account & Category -->
-                <div id="normalFields" class="space-y-5">
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Счет *</label>
-                        <select id="accountInput"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
-                            <option value="" disabled selected>Выберите счет</option>
-                        </select>
-                        <div id="accountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
-                            Обязательно</div>
-                    </div>
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Категория *</label>
-                        <select id="categoryInput"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
-                            <option value="" disabled selected>Выберите категорию</option>
-                        </select>
-                        <div id="categoryError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
-                            Обязательно</div>
-                    </div>
-                </div>
-
-                <!-- FX Mode: From Acc, Rate, To Acc -->
-                <div id="fxFields" class="hidden space-y-5">
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Со счета *</label>
-                        <select id="fromAccountInput"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
-                            <option value="" disabled selected>Откуда снимаем</option>
-                        </select>
-                        <div id="fromAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
-                            Обязательно</div>
-                    </div>
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс *</label>
-                        <input id="fxRateInput" inputmode="decimal" placeholder="10000,00"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
-                            type="text" />
-                        <div id="fxRateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Укажите
-                            курс</div>
-                    </div>
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">На счет *</label>
-                        <select id="toAccountInput"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
-                            <option value="" disabled selected>Куда зачисляем</option>
-                        </select>
-                        <div id="toAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
-                            Обязательно</div>
-                    </div>
-                </div>
-
-                <!-- Amount + Currency (Combined) -->
-                <div class="relative">
-                    <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма *</label>
-                    <div class="flex gap-2">
-                        <div class="relative w-3/4">
-                            <span id="amountSign" class="absolute left-3 top-1/2 -translate-y-1/2 text-[16px]">+</span>
-                            <input id="amountInput" inputmode="decimal" placeholder="0,00"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6"
-                                required type="text" />
-                        </div>
-                        <div class="w-1/4">
-                            <input id="currencyDisplay" disabled
-                                class="w-full bg-tg-secondaryBg/50 p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] text-[14px] text-center text-tg-hint cursor-not-allowed h-[52px]"
-                                value="---" />
-                        </div>
-                    </div>
-                    <div id="fxResultTip" class="hidden text-green-500 text-[13px] mt-1.5 ml-1 font-medium italic">
-                        На счет попадет: + 0,00 ---
-                    </div>
-                    <div id="amountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Обязательно
-                    </div>
-                </div>
-
-                <!-- FX Block -->
-                <div id="fxBlock" class="hidden space-y-3">
-                    <div>
-                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс <span
-                                class="text-[12px] opacity-70 ml-1">(UZS за 1 ед.)</span></label>
-                        <div class="flex gap-2 items-center">
-                            <div class="w-3/4">
-                                <input id="fxRateInput" inputmode="decimal" placeholder="Курс"
-                                    class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] text-tg-text"
-                                    type="text" />
-                            </div>
-                            <div class="w-1/4">
-                                <select id="fxCurrencyInput"
-                                    class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
-                                    <option value="USD">USD</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="RUB">RUB</option>
-                                    <option value="KZT">KZT</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pl-1">
-                        <span id="fxTotalDisplay" class="text-[14px] text-green-500 font-medium">Итого: + 0,00
-                            UZS</span>
-                    </div>
-                </div>
-
-                <!-- Counterparty -->
-                <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент</label>
-                    <div class="relative flex items-center">
-                        <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
-                            type="text" autocomplete="off" />
-                        <div id="counterpartySuggestions"
-                            class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
-                            style="left: 12px; top: 100%;"></div>
-                    </div>
-                    <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
-                        Необходимо заполнить</div>
-                </div>
-
-                <!-- Comment -->
-                <div class="relative">
-                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
-                    <div class="relative flex items-center">
-                        <textarea id="commentInput" placeholder="Детали операции..." rows="1"
-                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"
-                            autocomplete="off"></textarea>
-                        <div id="commentSuggestions"
-                            class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
-                            style="left: 12px; top: 100%;"></div>
-                    </div>
-                    <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
-                        заполнить</div>
-                </div>
-
-                <!-- Photo Section -->
+                <!-- Type Row (First) -->
                 <div>
-                    <label id="photoLabel"
-                        class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-[hsla(0,0%,50%,0.1)] cursor-pointer hover:bg-tg-secondaryBg/50 transition-colors bg-tg-secondaryBg/30 text-tg-hint">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                            <circle cx="12" cy="13" r="3" />
-                        </svg>
-                        <span class="text-[14px]">Добавить фото (до 6 шт, макс 24МБ)</span>
-                        <input id="photoInput" accept="image/*" class="hidden" type="file" multiple />
-                    </label>
-
-                    <!-- Multi-Preview Container -->
-                    <div id="photoList" class="grid grid-cols-3 gap-2 mt-3">
-                        <!-- Items will be injected here -->
+                    <div class="flex justify-between items-center mb-1 px-1">
+                        <label class="text-[14px] text-tg-hint">Тип</label>
+                        <div id="statusPill"
+                            class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full transition-all border border-black/5">
+                            ...</div>
+                    </div>
+                    <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[12px] font-medium text-tg-hint overflow-hidden border border-[hsla(0,0%,50%,0.1)]"
+                        id="typeSeg">
+                        <div id="typeGlider"
+                            class="absolute top-1 bottom-1 w-[calc((100%-8px)/4)] bg-white rounded-lg shadow-sm transition-all duration-200 ease-out left-1">
+                        </div>
+                        <input type="radio" name="txnType" id="typeIn" value="in" class="hidden" checked>
+                        <input type="radio" name="txnType" id="typeOut" value="out" class="hidden">
+                        <input type="radio" name="txnType" id="typeFx" value="fx" class="hidden">
+                        <input type="radio" name="txnType" id="typeBalance" value="balance" class="hidden">
+                        <label for="typeIn"
+                            class="type-label flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Получил</label>
+                        <label for="typeOut"
+                            class="type-label flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Отдал</label>
+                        <label for="typeFx"
+                            class="type-label flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Обменял</label>
+                        <label for="typeBalance"
+                            class="type-label flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Остатки</label>
                     </div>
                 </div>
 
-                <!-- Sticky Button Wrapper -->
-                <div
-                    class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-tg-bg via-tg-bg/95 to-transparent z-40">
-                    <div class="container mx-auto max-w-md">
-                        <button type="button" id="saveBtn"
-                            class="w-full py-3.5 rounded-xl text-[16px] text-white shadow-xl active:scale-95 transition-all bg-blue-500 font-bold border border-white/10">
-                            <span id="saveBtnText">Заполните данные</span>
-                        </button>
+                <!-- Date Row (Second) -->
+                <div id="dateRow">
+                    <label class="text-[14px] text-tg-hint pl-1 block mb-1">Дата</label>
+                    <div class="relative h-[52px]">
+                        <div
+                            class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
+                            <span id="dateDisplay" class="truncate w-full text-tg-text">--.--.----</span>
+                        </div>
+                        <input id="dateInput"
+                            class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+                            required type="date" />
+                    </div>
+                    <div id="dateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Обязательно
+                    </div>
+                </div>
+
+                <div id="formInputs" class="flex flex-col gap-5">
+                    <!-- Amount Field (Now inside Type row logic for proximity) -->
+                    <div class="relative">
+                        <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма</label>
+                        <div class="relative flex items-center">
+                            <span id="amountSign"
+                                class="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] z-10">+</span>
+                            <input id="amountInput" inputmode="decimal" placeholder="0,00"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-transparent focus:outline-none transition-colors text-[16px] pl-6 pr-14"
+                                required type="text" />
+                            <span id="currencyDisplay"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-tg-hint font-medium">---</span>
+                        </div>
+                        <div id="amountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Обязательно</div>
+                    </div>
+
+                    <!-- Normal Mode: Account & Category -->
+                    <div id="normalFields" class="space-y-5">
+                        <div>
+                            <label class="text-[14px] text-tg-hint pl-1 block mb-1">Счет</label>
+                            <select id="accountInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                                <option value="" disabled selected>Выберите счет</option>
+                            </select>
+                            <div id="accountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                                Обязательно</div>
+                        </div>
+                        <div>
+                            <label class="text-[14px] text-tg-hint pl-1 block mb-1">Категория</label>
+                            <select id="categoryInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                                <option value="" disabled selected>Выберите категорию</option>
+                            </select>
+                            <div id="categoryError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                                Обязательно</div>
+                        </div>
+                    </div>
+
+                    <!-- FX Mode: From Acc, To Acc, Rate -->
+                    <div id="fxFields" class="hidden space-y-5">
+                        <div>
+                            <label class="text-[14px] text-tg-hint pl-1 block mb-1">Со счета</label>
+                            <select id="fromAccountInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                                <option value="" disabled selected>Откуда снимаем</option>
+                            </select>
+                            <div id="fromAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                                Обязательно</div>
+                        </div>
+                        <div>
+                            <label class="text-[14px] text-tg-hint pl-1 block mb-1">На счет</label>
+                            <select id="toAccountInput"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                                <option value="" disabled selected>Куда зачисляем</option>
+                            </select>
+                            <div id="toAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                                Обязательно</div>
+                        </div>
+                        <div>
+                            <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс</label>
+                            <input id="fxRateInput" inputmode="decimal" placeholder="10000,00"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text font-medium"
+                                type="text" />
+                            <div id="fxResultTip"
+                                class="hidden text-green-500 text-[13px] mt-1.5 ml-1 font-medium italic">
+                                На счет попадет: + 0,00 ---
+                            </div>
+                            <div id="fxRateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                                Укажите
+                                курс</div>
+                        </div>
+                    </div>
+
+                    <!-- Counterparty -->
+                    <div class="relative">
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Контрагент</label>
+                        <div class="relative flex items-center">
+                            <input id="counterpartyInput" required placeholder="Кто дал или кому отдали"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
+                                type="text" autocomplete="off" />
+                            <div id="counterpartySuggestions"
+                                class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
+                                style="left: 12px; top: 100%;"></div>
+                        </div>
+                        <div id="counterpartyError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Необходимо заполнить</div>
+                    </div>
+
+                    <!-- Comment -->
+                    <div class="relative">
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Комментарий</label>
+                        <div class="relative flex items-center">
+                            <textarea id="commentInput" placeholder="Детали операции..." rows="1"
+                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text resize-none"
+                                autocomplete="off"></textarea>
+                            <div id="commentSuggestions"
+                                class="absolute pointer-events-none flex flex-col items-start gap-1 z-20 transition-all duration-150 py-1"
+                                style="left: 12px; top: 100%;"></div>
+                        </div>
+                        <div id="commentError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Необходимо
+                            заполнить</div>
+                    </div>
+
+                    <!-- Photo Section -->
+                    <div>
+                        <label id="photoLabel"
+                            class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-[hsla(0,0%,50%,0.1)] cursor-pointer hover:bg-tg-secondaryBg/50 transition-colors bg-tg-secondaryBg/30 text-tg-hint">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                                <circle cx="12" cy="13" r="3" />
+                            </svg>
+                            <span class="text-[14px]">Добавить фото (до 6 шт, макс 24МБ)</span>
+                            <input id="photoInput" accept="image/*" class="hidden" type="file" multiple />
+                        </label>
+
+                        <!-- Multi-Preview Container -->
+                        <div id="photoList" class="grid grid-cols-3 gap-2 mt-3">
+                            <!-- Items will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Save Button (Flow in document) -->
+                    <button type="button" id="saveBtn"
+                        class="w-full py-3.5 rounded-xl text-[16px] text-white shadow-xl active:scale-95 transition-all bg-blue-500 font-bold border border-white/10 mt-2">
+                        <span id="saveBtnText">Заполните данные</span>
+                    </button>
+                </div>
+
+                <!-- VIEW: Balance View -->
+                <div id="balanceView" class="hidden flex-col gap-4 py-2">
+                    <div id="balanceList" class="grid grid-cols-1 gap-3">
+                        <div class="p-6 text-center text-tg-hint text-sm animate-pulse">Загрузка данных...</div>
                     </div>
                 </div>
             </form>
@@ -285,7 +266,7 @@
         </div>
 
         <!-- HISTORY SECTION -->
-        <section class="pb-4">
+        <section id="historySection" class="pb-4 hidden">
             <div class="flex items-center justify-between mb-3 px-1">
                 <h2 class="text-[14px] text-tg-text">Последние записи</h2>
                 <span id="historyCount" class="text-[14px] text-tg-hint bg-tg-secondaryBg px-2 py-1 rounded-lg">0 /

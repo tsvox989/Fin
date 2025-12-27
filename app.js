@@ -29,6 +29,7 @@ const state = {
     photos: [], // Array of { file, base64, name }
 
     history: [],
+    balances: null,
     loading: false
 };
 
@@ -44,6 +45,7 @@ const els = {
         in: document.querySelector('label[for="typeIn"]'),
         out: document.querySelector('label[for="typeOut"]'),
         fx: document.querySelector('label[for="typeFx"]'),
+        balance: document.querySelector('label[for="typeBalance"]'),
     },
     amountSign: document.getElementById("amountSign"),
     amountInput: document.getElementById("amountInput"),
@@ -82,6 +84,12 @@ const els = {
     fxRateError: document.getElementById("fxRateError"),
     counterpartyError: document.getElementById("counterpartyError"),
     commentError: document.getElementById("commentError"),
+    counterpartyError: document.getElementById("counterpartyError"),
+    commentError: document.getElementById("commentError"),
+    formInputs: document.getElementById("formInputs"),
+    balanceView: document.getElementById("balanceView"),
+    balanceList: document.getElementById("balanceList"),
+    dateRow: document.getElementById("dateRow"),
 };
 
 /****************
@@ -157,7 +165,8 @@ const parseNumber = (val) => {
 const showStatus = (msg, isError = false) => {
     if (!els.statusPill) return;
     els.statusPill.innerHTML = `<span>${msg}</span>`;
-    els.statusPill.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${isError ? 'text-red-500 bg-red-500/10' : 'text-green-500 bg-green-500/10'}`;
+    els.statusPill.classList.remove('hidden');
+    els.statusPill.className = `text-[10px] font-bold px-2 py-0.5 rounded-full transition-all border ${isError ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-green-500 bg-green-500/10 border-green-500/20'}`;
 };
 
 // Helper for Date Display
@@ -180,7 +189,7 @@ function validateForm() {
         if (!rate || rate === 0) isValid = false;
     } else {
         if (!els.accountInput.value) isValid = false;
-        if (!els.categoryInput.value) isValid = false;
+        // Category is optional
     }
 
     if (!state.amount || parseNumber(state.amount) === 0) isValid = false;
@@ -306,53 +315,64 @@ function initApp() {
  ****************/
 const updateTheme = () => {
     const t = state.type;
-    const idx = ['in', 'out', 'fx'].indexOf(t);
+    const idx = ['in', 'out', 'fx', 'balance'].indexOf(t);
     els.typeGlider.style.transform = `translateX(${idx * 100}%)`;
 
-    ['in', 'out', 'fx'].forEach(k => {
+    // 1. Update Labels
+    ['in', 'out', 'fx', 'balance'].forEach(k => {
         const lbl = els.typeLabels[k];
-        if (k === t) {
-            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-white font-semibold";
-        } else {
-            lbl.className = "flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200 text-tg-hint hover:text-tg-text";
-        }
+        lbl.classList.toggle('active', k === t);
     });
 
-    // Colors
-    const setColors = (cls, bgCls) => {
-        // Glider - use exact width matching the labels (inner width minus padding / 3)
-        els.typeGlider.className = `absolute top-1 bottom-1 w-[calc((100%-8px)/3)] rounded-lg shadow-sm transition-all duration-300 ease-out ${bgCls}`;
+    // 2. Set Theme Class on Form
+    const themedEl = document.getElementById("txnForm");
+    themedEl.classList.remove('theme-in', 'theme-out', 'theme-fx', 'theme-balance');
+    themedEl.classList.add('theme-' + t);
 
-        els.amountInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] pl-6 ${cls}`;
-        els.fxRateInput.className = `w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] ${cls}`;
-        els.saveBtn.className = `w-full py-3 rounded-xl text-[16px] text-white shadow-lg active:scale-95 transition-all mt-2 font-medium ${bgCls}`;
-        els.photoLabel.className = `flex items-center gap-3 p-3 rounded-xl border border-dashed border-[hsla(0,0%,50%,0.1)] cursor-pointer transition-colors bg-tg-secondaryBg text-tg-hint hover:text-tg-text hover:border-${cls.split('-')[1]}-400`;
-    };
+    // 3. Update Content & Visibility
+    // 3. Update Content & Visibility
+    if (t === 'balance') {
+        els.formInputs.style.display = 'none';
+        els.dateRow.style.display = 'none';
+        els.saveBtn.style.display = 'none'; // Force hide button
+
+        els.balanceView.classList.remove("hidden");
+        els.balanceView.style.display = 'flex';
+
+        // Show History in Balance Mode
+        els.historySection.classList.remove("hidden");
+
+        renderBalances();
+        return;
+    }
+
+    // Normal Forms: Hide history, Show inputs
+    els.formInputs.style.display = 'flex';
+    els.dateRow.style.display = 'block';
+    els.saveBtn.style.display = 'block'; // Show button
+
+    els.balanceView.classList.add("hidden");
+    els.balanceView.style.display = 'none';
+
+    els.historySection.classList.add("hidden");
 
     if (t === 'in') {
         els.amountSign.textContent = "+";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-green-500";
         els.amountLabel.textContent = "Сумма";
         els.fxFields.classList.add("hidden");
         els.normalFields.classList.remove("hidden");
         els.fxResultTip.classList.add("hidden");
-        setColors('text-green-500', 'bg-green-500');
     } else if (t === 'out') {
         els.amountSign.textContent = "-";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
         els.amountLabel.textContent = "Сумма";
         els.fxFields.classList.add("hidden");
         els.normalFields.classList.remove("hidden");
         els.fxResultTip.classList.add("hidden");
-        setColors('text-red-500', 'bg-red-500');
     } else { // fx
         els.amountSign.textContent = "-";
-        els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
         els.amountLabel.textContent = "Сумма (Отдаю)";
         els.normalFields.classList.add("hidden");
         els.fxFields.classList.remove("hidden");
-        // Digits are RED (Giving money), but Button/Theme remains BLUE (Exchange action)
-        setColors('text-red-500', 'bg-blue-500');
     }
     validateForm();
 };
@@ -367,9 +387,11 @@ async function loadHistory() {
     if (res.ok) {
         state.access = true;
         state.history = res.items || [];
+        state.balances = res.balances || {};
         state.user = res.user;
         populateDropdowns();
         renderHistory();
+        renderBalances(); // Initial render if needed, though hidden
         showStatus("Онлайн", false);
     } else {
         state.access = false;
@@ -395,7 +417,8 @@ function populateDropdowns() {
         accounts.forEach(acc => {
             const opt = document.createElement('option');
             opt.value = acc;
-            opt.textContent = acc;
+            // Strip "{USD}" for display only
+            opt.textContent = acc.replace(/\{[^}]+\}/, '').trim();
             el.appendChild(opt);
         });
     };
@@ -407,7 +430,7 @@ function populateDropdowns() {
     const catStr = state.user.txn_cat || "";
     const categories = catStr.split(',').map(s => s.trim()).filter(s => s);
 
-    els.categoryInput.innerHTML = '<option value="" disabled selected>Выберите категорию</option>';
+    els.categoryInput.innerHTML = '<option value="" disabled selected>Выберите категорию (опционально)</option>';
     categories.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
@@ -459,8 +482,68 @@ const calculateFx = () => {
     els.fxResultTip.textContent = `На счет попадет: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${state.toCurrency || '---'}`;
 };
 
+function renderBalances() {
+    if (!els.balanceList) return;
+
+    // If not loaded yet
+    if (state.loading || !state.balances) {
+        els.balanceList.innerHTML = '<div class="p-6 text-center text-tg-hint text-sm animate-pulse">Загрузка данных...</div>';
+        return;
+    }
+
+    const bals = state.balances;
+    const accounts = Object.keys(bals);
+
+    if (accounts.length === 0) {
+        els.balanceList.innerHTML = '<div class="p-6 text-center text-tg-hint text-sm">Нет данных по счетам</div>';
+        return;
+    }
+
+    els.balanceList.innerHTML = "";
+
+    // Sort logic? Alphabetical or configured order? Use configured order if possible.
+    let sortedAccs = accounts;
+    if (state.user && state.user.txn_acc) {
+        const order = state.user.txn_acc.split(',').map(s => s.trim());
+        sortedAccs = order.filter(a => bals[a] !== undefined); // Only show those with balance entry (or should we show all?)
+        // Actually, backend only returns touched accounts.
+    }
+
+    sortedAccs.forEach(acc => {
+        const val = bals[acc];
+        // Extract currency from "Name {CUR}"
+        const match = acc.match(/\{([^}]+)\}/);
+        const cur = match ? match[1] : "";
+        const name = acc.replace(/\{[^}]+\}/, '').trim();
+
+        // Color hash for decoration bar
+        const hash = acc.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+        const hue = Math.abs(hash % 360);
+        const color = `hsl(${hue}, 70%, 50%)`;
+
+        // Format Amount
+        const fmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val);
+
+        const div = document.createElement('div');
+        div.className = "balance-card flex flex-col gap-1 transition-transform active:scale-[0.98]";
+        div.style.setProperty('--card-color', color);
+        div.innerHTML = `
+            <div class="flex justify-between items-start">
+                <span class="text-[13px] font-medium text-tg-hint tracking-wide uppercase">${cur}</span>
+                <span class="text-[11px] bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-tg-hint opacity-50">#${cur}</span>
+            </div>
+            <div class="text-[15px] font-bold text-tg-text leading-tight mt-1 truncate">${name}</div>
+            <div class="text-[20px] font-mono font-medium text-tg-text mt-1 tracking-tight">${fmt}</div>
+        `;
+        els.balanceList.appendChild(div);
+    });
+}
+
 // Events
 els.dateInput.addEventListener('change', () => {
+    if (!els.dateInput.value) {
+        els.dateInput.value = new Date().toISOString().slice(0, 10);
+    }
     const [y, m, d] = els.dateInput.value.split('-');
     els.dateDisplay.textContent = `${d}.${m}.${y}`;
     state.date = els.dateInput.value;
@@ -637,12 +720,8 @@ els.saveBtn.addEventListener('click', async () => {
         } else {
             els.accountError.classList.add('hidden');
         }
-        if (!els.categoryInput.value) {
-            els.categoryError.classList.remove('hidden');
-            hasError = true;
-        } else {
-            els.categoryError.classList.add('hidden');
-        }
+        // Category is optional, so no error check here
+        els.categoryError.classList.add('hidden');
     }
 
     if (!state.amount || parseNumber(state.amount) === 0) {
@@ -688,10 +767,6 @@ els.saveBtn.addEventListener('click', async () => {
     if (state.type === 'fx') {
         payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
         payload.fx_currency = state.toCurrency;
-    }
-    if (state.type === 'fx') {
-        payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
-        payload.fx_currency = els.fxCurrencyInput.value;
     }
 
     if (state.photos.length > 0) {

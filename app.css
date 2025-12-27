@@ -38,3 +38,92 @@ body {
     border-radius: 12px;
     font-size: 14px;
 }
+
+/* Theme System */
+#txnForm {
+    --theme-color: #3390ec;
+    --amount-color: var(--tg-theme-text-color, #000);
+    --rate-color: #3390ec;
+}
+
+#txnForm.theme-in {
+    --theme-color: #6c8623;
+    --amount-color: #6c8623;
+}
+
+#txnForm.theme-out {
+    --theme-color: #9e3f4f;
+    --amount-color: #9e3f4f;
+}
+
+#txnForm.theme-fx {
+    --theme-color: #3390ec;
+    /* Exchange remains blue themed */
+    --amount-color: #9e3f4f;
+    /* But giving money is red */
+    --rate-color: #0a7d9b;
+}
+
+#txnForm.theme-balance {
+    --theme-color: #ffffff;
+    --amount-color: #000000;
+}
+
+/* Apply Theme to Elements */
+#typeGlider {
+    background-color: var(--theme-color) !important;
+}
+
+#saveBtn {
+    background-color: var(--theme-color) !important;
+}
+
+/* Balance Theme Specific Overrides */
+#txnForm.theme-balance #typeGlider {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#txnForm.theme-balance .type-label.active {
+    color: #000000 !important;
+}
+
+/* Balance Card Styles */
+.balance-card {
+    background: var(--tg-theme-bg-color, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.balance-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--card-color, #ccc);
+}
+
+#amountInput,
+#amountSign {
+    color: var(--amount-color) !important;
+}
+
+#fxRateInput {
+    color: var(--rate-color) !important;
+    border-color: color-mix(in srgb, var(--rate-color) 20%, transparent) !important;
+}
+
+#fxRateInput:focus {
+    border-color: var(--rate-color) !important;
+}
+
+/* Type Labels active state */
+.type-label.active {
+    color: #ffffff !important;
+    font-weight: 600;
+}
