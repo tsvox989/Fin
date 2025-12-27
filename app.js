@@ -537,12 +537,14 @@ function renderBalances() {
         div.className = "balance-card flex flex-col gap-1 transition-transform active:scale-[0.98]";
         div.style.setProperty('--card-color', color);
         div.innerHTML = `
-            <div class="flex justify-between items-start">
-                <span class="text-[13px] font-medium text-tg-hint tracking-wide uppercase">${cur}</span>
-                <span class="text-[11px] bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-tg-hint opacity-50">#${cur}</span>
+            <div class="flex justify-between items-center">
+                <span class="text-[15px] font-medium text-tg-text truncate pr-2">${name}</span>
+                <span class="text-[13px] text-tg-hint font-medium tracking-wide opacity-70">${cur}</span>
             </div>
-            <div class="text-[15px] font-bold text-tg-text leading-tight mt-1 truncate">${name}</div>
-            <div class="text-[20px] font-mono font-medium text-tg-text mt-1 tracking-tight">${fmt}</div>
+            <div class="text-[22px] font-bold text-tg-text mt-0.5 tracking-tight flex items-baseline gap-1.5">
+                <span class="font-mono">${fmt}</span>
+                <span class="text-[16px] font-medium text-tg-hint">${cur}</span>
+            </div>
         `;
         els.balanceList.appendChild(div);
     });
