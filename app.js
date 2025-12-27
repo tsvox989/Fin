@@ -503,14 +503,23 @@ function renderBalances() {
 
     // Sort logic? Alphabetical or configured order? Use configured order if possible.
     let sortedAccs = accounts;
+
+    // Always use configured accounts if available, to show even 0 balances
     if (state.user && state.user.txn_acc) {
-        const order = state.user.txn_acc.split(',').map(s => s.trim());
-        sortedAccs = order.filter(a => bals[a] !== undefined); // Only show those with balance entry (or should we show all?)
-        // Actually, backend only returns touched accounts.
+        const order = state.user.txn_acc.split(',').map(s => s.trim()).filter(s => s);
+        // We want ALL accounts in order, not just those with balances
+        // If an account is in bals but not in order, maybe append it? 
+        // For simplicity, just use order. If user has transaction on unconfigured account, they might miss it, 
+        // but "user wants to see all accounts" usually means "my accounts".
+
+        // Let's union them: order + (accounts - order)
+        const inOrder = new Set(order);
+        const others = accounts.filter(a => !inOrder.has(a));
+        sortedAccs = [...order, ...others];
     }
 
     sortedAccs.forEach(acc => {
-        const val = bals[acc];
+        const val = bals[acc] || 0;
         // Extract currency from "Name {CUR}"
         const match = acc.match(/\{([^}]+)\}/);
         const cur = match ? match[1] : "";
@@ -677,6 +686,10 @@ els.saveBtn.addEventListener('click', async () => {
     if (!state.userId) return;
 
     // Check Access
+    if (!state.userId) {
+        showStatus("Ошибка: Нет User ID. Перезагрузите.", true);
+        return;
+    }
     if (state.access === false) {
         showStatus("Нет доступа к сохранению", true);
         return;
@@ -747,6 +760,9 @@ els.saveBtn.addEventListener('click', async () => {
 
     if (hasError) return;
 
+    els.saveBtnText.textContent = "Сохранение...";
+    els.saveBtn.disabled = true;
+
     // 1. Prepare Payload
     const [y, m, d] = state.date.split('-');
     const dateFormatted = `${d}.${m}.${y}`;
@@ -781,7 +797,7 @@ els.saveBtn.addEventListener('click', async () => {
     const tempItem = {
         date: dateFormatted,
         type: state.type,
-        amount_main: formatCurrency(parseNumber(state.amount), els.currencyInput.value),
+        amount_main: formatCurrency(parseNumber(state.amount), state.currency),
         amount_sub: "",
         desc: payload.counterparty,
         comment: payload.comment,
@@ -800,9 +816,6 @@ els.saveBtn.addEventListener('click', async () => {
     els.counterpartyInput.value = "";
     state.photos = [];
     renderPhotos();
-
-    els.saveBtnText.textContent = "Сохраняется...";
-    els.saveBtn.disabled = true;
 
     // 3. Send Request
     const res = await apiPost(payload);
