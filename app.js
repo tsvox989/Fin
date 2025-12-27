@@ -560,7 +560,7 @@ els.accountInput.addEventListener('change', () => {
     state.account = els.accountInput.value;
     const match = state.account.match(/\{([^}]+)\}/);
     state.currency = match ? match[1].toUpperCase() : "";
-    els.currencyDisplay.value = state.currency || "---";
+    els.currencyDisplay.textContent = state.currency || "---";
     validateForm();
 });
 
@@ -568,7 +568,7 @@ els.fromAccountInput.addEventListener('change', () => {
     state.fromAccount = els.fromAccountInput.value;
     const match = state.fromAccount.match(/\{([^}]+)\}/);
     state.currency = match ? match[1].toUpperCase() : "";
-    els.currencyDisplay.value = state.currency || "---";
+    els.currencyDisplay.textContent = state.currency || "---";
     calculateFx();
     validateForm();
 });
