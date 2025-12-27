@@ -77,12 +77,10 @@
                     <div class="w-1/4 min-w-0">
                         <label class="text-[14px] text-tg-hint pl-1 block mb-1">Дата</label>
                         <div class="relative h-[52px]">
-                            <!-- Visual Date (DD.MM.YYYY) -->
                             <div
                                 class="absolute inset-0 w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] !text-[14px] px-0.5 text-center flex items-center justify-center pointer-events-none z-10">
                                 <span id="dateDisplay" class="truncate w-full">--.--.----</span>
                             </div>
-                            <!-- Actual Input -->
                             <input id="dateInput"
                                 class="custom-date-input absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
                                 required type="date" />
@@ -96,17 +94,12 @@
                         <label class="text-[14px] text-tg-hint pl-1 block mb-1">Тип</label>
                         <div class="relative flex bg-tg-secondaryBg p-1 rounded-xl h-[52px] items-center text-[14px] font-medium text-tg-hint overflow-hidden border border-[hsla(0,0%,50%,0.1)]"
                             id="typeSeg">
-                            <!-- Glider background -->
                             <div id="typeGlider"
                                 class="absolute top-1 bottom-1 w-[calc((100%-8px)/3)] bg-white rounded-lg shadow-sm transition-all duration-200 ease-out left-1">
                             </div>
-
-                            <!-- Radios (Hidden) -->
                             <input type="radio" name="txnType" id="typeIn" value="in" class="hidden" checked>
                             <input type="radio" name="txnType" id="typeOut" value="out" class="hidden">
                             <input type="radio" name="txnType" id="typeFx" value="fx" class="hidden">
-
-                            <!-- Labels -->
                             <label for="typeIn"
                                 class="flex-1 h-full flex items-center justify-center cursor-pointer z-10 transition-colors duration-200">Получил</label>
                             <label for="typeOut"
@@ -117,7 +110,59 @@
                     </div>
                 </div>
 
-                <!-- Amount + Currency -->
+                <!-- Normal Mode: Account & Category -->
+                <div id="normalFields" class="space-y-5">
+                    <div>
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Счет *</label>
+                        <select id="accountInput"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                            <option value="" disabled selected>Выберите счет</option>
+                        </select>
+                        <div id="accountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Обязательно</div>
+                    </div>
+                    <div>
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Категория *</label>
+                        <select id="categoryInput"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                            <option value="" disabled selected>Выберите категорию</option>
+                        </select>
+                        <div id="categoryError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Обязательно</div>
+                    </div>
+                </div>
+
+                <!-- FX Mode: From Acc, Rate, To Acc -->
+                <div id="fxFields" class="hidden space-y-5">
+                    <div>
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Со счета *</label>
+                        <select id="fromAccountInput"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                            <option value="" disabled selected>Откуда снимаем</option>
+                        </select>
+                        <div id="fromAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Обязательно</div>
+                    </div>
+                    <div>
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">Курс *</label>
+                        <input id="fxRateInput" inputmode="decimal" placeholder="10000,00"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] text-tg-text"
+                            type="text" />
+                        <div id="fxRateError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Укажите
+                            курс</div>
+                    </div>
+                    <div>
+                        <label class="text-[14px] text-tg-hint pl-1 block mb-1">На счет *</label>
+                        <select id="toAccountInput"
+                            class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] appearance-none text-tg-text">
+                            <option value="" disabled selected>Куда зачисляем</option>
+                        </select>
+                        <div id="toAccountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">*
+                            Обязательно</div>
+                    </div>
+                </div>
+
+                <!-- Amount + Currency (Combined) -->
                 <div class="relative">
                     <label id="amountLabel" class="text-[14px] text-tg-hint pl-1 block mb-1">Сумма *</label>
                     <div class="flex gap-2">
@@ -128,18 +173,16 @@
                                 required type="text" />
                         </div>
                         <div class="w-1/4">
-                            <select id="currencyInput"
-                                class="w-full bg-tg-secondaryBg p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] focus:outline-none transition-colors text-[16px] px-1 text-center appearance-none text-tg-text">
-                                <option value="UZS">UZS</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="RUB">RUB</option>
-                                <option value="KZT">KZT</option>
-                            </select>
+                            <input id="currencyDisplay" disabled
+                                class="w-full bg-tg-secondaryBg/50 p-3 rounded-xl border border-[hsla(0,0%,50%,0.1)] text-[14px] text-center text-tg-hint cursor-not-allowed h-[52px]"
+                                value="---" />
                         </div>
                     </div>
-                    <div id="amountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Необходимо
-                        заполнить</div>
+                    <div id="fxResultTip" class="hidden text-green-500 text-[13px] mt-1.5 ml-1 font-medium italic">
+                        На счет попадет: + 0,00 ---
+                    </div>
+                    <div id="amountError" class="hidden text-red-500 text-[11px] mt-1 ml-1 font-medium">* Обязательно
+                    </div>
                 </div>
 
                 <!-- FX Block -->

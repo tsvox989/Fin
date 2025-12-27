@@ -16,8 +16,13 @@ const state = {
     // Form
     type: "in",
     date: new Date().toISOString().slice(0, 10),
+    account: "",       // Normal Mode Account
+    category: "",      // Normal Mode Category
+    fromAccount: "",   // FX Mode From Account
+    toAccount: "",     // FX Mode To Account
     amount: "",
-    currency: "UZS",
+    currency: "",
+    toCurrency: "",    // FX Mode target currency
     fxRate: "",
     fxCurrency: "USD",
     comment: "",
@@ -42,9 +47,16 @@ const els = {
     },
     amountSign: document.getElementById("amountSign"),
     amountInput: document.getElementById("amountInput"),
-    currencyInput: document.getElementById("currencyInput"),
-    amountLabel: document.getElementById("amountLabel"), // Added label ref
-    fxBlock: document.getElementById("fxBlock"),
+    currencyDisplay: document.getElementById("currencyDisplay"),
+    amountLabel: document.getElementById("amountLabel"),
+    accountInput: document.getElementById("accountInput"),
+    categoryInput: document.getElementById("categoryInput"),
+    fromAccountInput: document.getElementById("fromAccountInput"),
+    toAccountInput: document.getElementById("toAccountInput"),
+    normalFields: document.getElementById("normalFields"),
+    fxFields: document.getElementById("fxFields"),
+    fxResultTip: document.getElementById("fxResultTip"),
+    fxBlock: document.getElementById("fxBlock"), // Still referenced for theme colors but UI logic changed
     fxRateInput: document.getElementById("fxRateInput"),
     fxCurrencyInput: document.getElementById("fxCurrencyInput"),
     fxTotalDisplay: document.getElementById("fxTotalDisplay"),
@@ -63,6 +75,11 @@ const els = {
     textMeasure: document.getElementById("textMeasure"),
     amountError: document.getElementById("amountError"),
     dateError: document.getElementById("dateError"),
+    accountError: document.getElementById("accountError"),
+    categoryError: document.getElementById("categoryError"),
+    fromAccountError: document.getElementById("fromAccountError"),
+    toAccountError: document.getElementById("toAccountError"),
+    fxRateError: document.getElementById("fxRateError"),
     counterpartyError: document.getElementById("counterpartyError"),
     commentError: document.getElementById("commentError"),
 };
@@ -155,6 +172,17 @@ function updateDateDisplay() {
 function validateForm() {
     let isValid = true;
     if (!state.date) isValid = false;
+
+    if (state.type === 'fx') {
+        if (!els.fromAccountInput.value) isValid = false;
+        if (!els.toAccountInput.value) isValid = false;
+        const rate = parseNumber(state.fxRate);
+        if (!rate || rate === 0) isValid = false;
+    } else {
+        if (!els.accountInput.value) isValid = false;
+        if (!els.categoryInput.value) isValid = false;
+    }
+
     if (!state.amount || parseNumber(state.amount) === 0) isValid = false;
     if (!els.counterpartyInput.value.trim()) isValid = false;
     if (!els.commentInput.value.trim()) isValid = false;
@@ -305,19 +333,24 @@ const updateTheme = () => {
         els.amountSign.textContent = "+";
         els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-green-500";
         els.amountLabel.textContent = "Сумма";
-        els.fxBlock.classList.add("hidden");
+        els.fxFields.classList.add("hidden");
+        els.normalFields.classList.remove("hidden");
+        els.fxResultTip.classList.add("hidden");
         setColors('text-green-500', 'bg-green-500');
     } else if (t === 'out') {
         els.amountSign.textContent = "-";
         els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
         els.amountLabel.textContent = "Сумма";
-        els.fxBlock.classList.add("hidden");
+        els.fxFields.classList.add("hidden");
+        els.normalFields.classList.remove("hidden");
+        els.fxResultTip.classList.add("hidden");
         setColors('text-red-500', 'bg-red-500');
     } else { // fx
         els.amountSign.textContent = "-";
         els.amountSign.className = "absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-red-500";
-        els.amountLabel.textContent = "Сумма (Отдал)";
-        els.fxBlock.classList.remove("hidden");
+        els.amountLabel.textContent = "Сумма (Отдаю)";
+        els.normalFields.classList.add("hidden");
+        els.fxFields.classList.remove("hidden");
         // Digits are RED (Giving money), but Button/Theme remains BLUE (Exchange action)
         setColors('text-red-500', 'bg-blue-500');
     }
@@ -335,6 +368,7 @@ async function loadHistory() {
         state.access = true;
         state.history = res.items || [];
         state.user = res.user;
+        populateDropdowns();
         renderHistory();
         showStatus("Онлайн", false);
     } else {
@@ -350,6 +384,38 @@ async function loadHistory() {
     }
 }
 
+function populateDropdowns() {
+    if (!state.user) return;
+
+    const accStr = state.user.txn_acc || "";
+    const accounts = accStr.split(',').map(s => s.trim()).filter(s => s);
+
+    const populate = (el, placeholder) => {
+        el.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+        accounts.forEach(acc => {
+            const opt = document.createElement('option');
+            opt.value = acc;
+            opt.textContent = acc;
+            el.appendChild(opt);
+        });
+    };
+
+    populate(els.accountInput, "Выберите счет");
+    populate(els.fromAccountInput, "Откуда снимаем");
+    populate(els.toAccountInput, "Куда зачисляем");
+
+    const catStr = state.user.txn_cat || "";
+    const categories = catStr.split(',').map(s => s.trim()).filter(s => s);
+
+    els.categoryInput.innerHTML = '<option value="" disabled selected>Выберите категорию</option>';
+    categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        els.categoryInput.appendChild(opt);
+    });
+}
+
 function renderHistoryError(msg) {
     els.historyList.innerHTML = `<div class="history-error">${msg}</div>`;
 }
@@ -360,38 +426,37 @@ function renderHistoryError(msg) {
 // Duplicate updateTheme removed
 
 const checkFxCurrencyLogic = () => {
-    if (els.currencyInput.value !== 'UZS') {
-        if (!els.fxCurrencyInput.querySelector('option[value="UZS"]')) {
-            const opt = document.createElement('option');
-            opt.value = "UZS";
-            opt.textContent = "UZS";
-            els.fxCurrencyInput.add(opt, 0);
-        }
-        els.fxCurrencyInput.value = 'UZS';
-        els.fxCurrencyInput.disabled = true;
-    } else {
-        els.fxCurrencyInput.disabled = false;
-    }
+    // Currency derives from From/To accounts in FX, or primary Account in Normal
     calculateFx();
 };
 
 const calculateFx = () => {
-    if (state.type !== 'fx') return;
-    const amt = parseNumber(state.amount);
-    const rate = parseNumber(state.fxRate);
-    if (!amt || !rate) {
-        els.fxTotalDisplay.textContent = `Итого получил: + 0,00 ${els.fxCurrencyInput.value}`;
+    if (state.type !== 'fx') {
+        els.fxResultTip.classList.add("hidden");
         return;
     }
+    const amt = parseNumber(state.amount);
+    const rate = parseNumber(state.fxRate);
+
+    if (!amt || !rate) {
+        els.fxResultTip.classList.add("hidden");
+        return;
+    }
+
     let res = 0;
-    if (els.currencyInput.value !== 'UZS' && els.fxCurrencyInput.value === 'UZS') {
-        res = amt * rate;
-    } else if (els.currencyInput.value === 'UZS' && els.fxCurrencyInput.value !== 'UZS') {
+    // Simple logic: FromAmt / Rate = ToAmt (if UZS) or FromAmt * Rate = ToAmt (if USD)
+    // We follow common rule: Result = Amount * Rate (if common pair) or Amount / Rate
+    // However, user said: "снизу зеленным будет напсиано сколько попадет на счет"
+    // Let's assume Rate is multiplier for FromCurrency to get ToCurrency 
+    // OR if From is UZS, Rate is division.
+    if (state.currency === 'UZS') {
         res = amt / rate;
     } else {
         res = amt * rate;
     }
-    els.fxTotalDisplay.textContent = `Итого получил: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${els.fxCurrencyInput.value}`;
+
+    els.fxResultTip.classList.remove("hidden");
+    els.fxResultTip.textContent = `На счет попадет: + ${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Math.abs(res))} ${state.toCurrency || '---'}`;
 };
 
 // Events
@@ -400,15 +465,60 @@ els.dateInput.addEventListener('change', () => {
     els.dateDisplay.textContent = `${d}.${m}.${y}`;
     state.date = els.dateInput.value;
 });
-els.typeInputs.forEach(inp => inp.addEventListener('change', () => { state.type = inp.value; updateTheme(); calculateFx(); validateForm(); }));
-els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.amount = val; calculateFx(); validateForm(); }));
-els.currencyInput.addEventListener('change', () => { state.currency = els.currencyInput.value; checkFxCurrencyLogic(); validateForm(); });
-els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => { state.fxRate = val; calculateFx(); validateForm(); }));
-els.fxCurrencyInput.addEventListener('change', () => { state.fxCurrency = els.fxCurrencyInput.value; calculateFx(); validateForm(); });
+
+els.typeInputs.forEach(inp => inp.addEventListener('change', () => {
+    state.type = inp.value;
+    updateTheme();
+    calculateFx();
+    validateForm();
+}));
+
+els.accountInput.addEventListener('change', () => {
+    state.account = els.accountInput.value;
+    const match = state.account.match(/\{([^}]+)\}/);
+    state.currency = match ? match[1].toUpperCase() : "";
+    els.currencyDisplay.value = state.currency || "---";
+    validateForm();
+});
+
+els.fromAccountInput.addEventListener('change', () => {
+    state.fromAccount = els.fromAccountInput.value;
+    const match = state.fromAccount.match(/\{([^}]+)\}/);
+    state.currency = match ? match[1].toUpperCase() : "";
+    els.currencyDisplay.value = state.currency || "---";
+    calculateFx();
+    validateForm();
+});
+
+els.toAccountInput.addEventListener('change', () => {
+    state.toAccount = els.toAccountInput.value;
+    const match = state.toAccount.match(/\{([^}]+)\}/);
+    state.toCurrency = match ? match[1].toUpperCase() : "";
+    calculateFx();
+    validateForm();
+});
+
+els.categoryInput.addEventListener('change', () => {
+    state.category = els.categoryInput.value;
+    validateForm();
+});
+
+els.amountInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => {
+    state.amount = val;
+    calculateFx();
+    validateForm();
+}));
+
+els.fxRateInput.addEventListener('input', (e) => handleInputWithFormat(e, (val) => {
+    state.fxRate = val;
+    calculateFx();
+    validateForm();
+}));
 els.counterpartyInput.addEventListener('input', () => {
     validateForm();
     showSuggestions(els.counterpartyInput, els.counterpartySuggestions, 'desc');
 });
+
 els.commentInput.addEventListener('input', () => {
     // Auto-expand logic
     els.commentInput.style.height = 'auto';
@@ -501,6 +611,40 @@ els.saveBtn.addEventListener('click', async () => {
         els.dateError.classList.add('hidden');
     }
 
+    if (state.type === 'fx') {
+        if (!els.fromAccountInput.value) {
+            els.fromAccountError.classList.remove('hidden');
+            hasError = true;
+        } else {
+            els.fromAccountError.classList.add('hidden');
+        }
+        if (!els.toAccountInput.value) {
+            els.toAccountError.classList.remove('hidden');
+            hasError = true;
+        } else {
+            els.toAccountError.classList.add('hidden');
+        }
+        if (!state.fxRate || parseNumber(state.fxRate) === 0) {
+            els.fxRateError.classList.remove('hidden');
+            hasError = true;
+        } else {
+            els.fxRateError.classList.add('hidden');
+        }
+    } else {
+        if (!els.accountInput.value) {
+            els.accountError.classList.remove('hidden');
+            hasError = true;
+        } else {
+            els.accountError.classList.add('hidden');
+        }
+        if (!els.categoryInput.value) {
+            els.categoryError.classList.remove('hidden');
+            hasError = true;
+        } else {
+            els.categoryError.classList.add('hidden');
+        }
+    }
+
     if (!state.amount || parseNumber(state.amount) === 0) {
         els.amountError.classList.remove('hidden');
         hasError = true;
@@ -533,11 +677,18 @@ els.saveBtn.addEventListener('click', async () => {
         user_id: state.userId,
         type: state.type,
         date: dateFormatted,
-        currency: els.currencyInput.value,
+        account: state.type === 'fx' ? state.fromAccount : state.account,
+        account_to: state.type === 'fx' ? state.toAccount : "",
+        category: state.type === 'fx' ? "" : state.category,
+        currency: state.currency,
         amount_raw: sign + state.amount.replace(/\s/g, ''),
         counterparty: els.counterpartyInput.value.trim(),
         comment: els.commentInput.value.trim()
     };
+    if (state.type === 'fx') {
+        payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
+        payload.fx_currency = state.toCurrency;
+    }
     if (state.type === 'fx') {
         payload.fx_rate_raw = state.fxRate.replace(/\s/g, '');
         payload.fx_currency = els.fxCurrencyInput.value;
